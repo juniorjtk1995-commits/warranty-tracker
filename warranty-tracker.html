@@ -3,15 +3,14 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<meta name="theme-color" content="#F2F2F7" media="(prefers-color-scheme: light)" />
-<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)" />
-<title>Warranty Tracker</title>
-<meta name="description" content="บันทึกและติดตามการรับประกันสินค้า — ข้อมูลเก็บในเครื่องของคุณเท่านั้น" />
+<meta name="theme-color" content="#060a1f" />
+<title>Pakankub</title>
+<meta name="description" content="Pakankub — บันทึกและติดตามการรับประกันสินค้า — ข้อมูลเก็บในเครื่องของคุณเท่านั้น" />
 <!-- เพิ่มลงหน้าจอโฮมบน iPhone/Android แล้วเปิดเต็มจอเหมือนแอป -->
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-status-bar-style" content="default" />
-<meta name="apple-mobile-web-app-title" content="Warranty" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Pakankub" />
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230088FF'/%3E%3Cpath d='M32 13l15 6v11c0 9-6 16-15 20-9-4-15-11-15-20V19z' fill='none' stroke='white' stroke-width='4' stroke-linejoin='round'/%3E%3Cpath d='M25 32l5 5 9-9' fill='none' stroke='white' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -116,6 +115,45 @@
   html.lg-on.dark [data-lg="clear"]   { --lg-tint: rgba(44,44,48,.2); }
   html.lg-on.dark [data-lg="regular"] { --lg-tint: rgba(30,30,32,.4); }
   html.lg-on.dark [data-lg="strong"]  { --lg-tint: rgba(30,30,32,.74); }
+
+  /* ---------- Header: ท้องฟ้ายามค่ำคืน ---------- */
+  #hero { position: absolute; inset: 0 0 auto 0; height: calc(330px + env(safe-area-inset-top)); overflow: hidden; pointer-events: none; z-index: 0;
+    -webkit-mask-image: linear-gradient(#000 55%, transparent); mask-image: linear-gradient(#000 55%, transparent); }
+  #hero .sky { position: absolute; inset: 0; background:
+      radial-gradient(70% 45% at 85% 0%, rgba(122, 92, 255, .38), transparent 70%),
+      radial-gradient(60% 50% at 0% 25%, rgba(30, 110, 255, .28), transparent 70%),
+      radial-gradient(80% 35% at 55% 100%, rgba(255, 128, 92, .32), transparent 72%),
+      radial-gradient(120% 30% at 40% 38%, rgba(255, 255, 255, .05), transparent 70%),
+      linear-gradient(180deg, #050816 0%, #0b1033 28%, #1a1a4d 55%, #35245e 78%, #57325f 100%); }
+  #hero .moon { position: absolute; top: calc(78px + env(safe-area-inset-top)); right: 14%; width: 26px; height: 26px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #fffdf2, #f3e9c6 60%, #d9cba0);
+    box-shadow: 0 0 18px 6px rgba(255, 246, 210, .28), 0 0 60px 24px rgba(180, 170, 255, .14); }
+  #hero .moon::after { content: ''; position: absolute; inset: 0; border-radius: 50%; transform: translate(8px, -5px);
+    background: #10133a; opacity: .92; filter: blur(.4px); } /* เงาจันทร์เสี้ยว */
+  #stars { position: absolute; inset: 0; width: 100%; height: 100%; }
+  /* ข้อความบน header เป็นสีขาวจนกว่าจะเลื่อนพ้นท้องฟ้า */
+  #topbar .t-large { transition: color .25s; }
+  #topbar:not(.scrolled) .t-large { color: #fff; text-shadow: 0 2px 14px rgba(0, 0, 0, .3); }
+  #topbar:not(.scrolled) .ggroup > button { color: #fff; }
+  .hero-sub { color: rgba(255, 255, 255, .72); text-shadow: 0 1px 8px rgba(0, 0, 0, .3); }
+
+  /* ---------- รายการสินค้าแบบการ์ดกิจกรรม ---------- */
+  .act-row { display: flex; align-items: center; gap: 14px; width: 100%; padding: 10px 8px; margin: 0 -8px; border-radius: 18px; text-align: left;
+    transition: background .2s, transform .2s; width: calc(100% + 16px); }
+  .act-row:hover, .act-row:focus-visible { background: var(--fill); outline: none; }
+  .act-row:active { transform: scale(.985); }
+  .act-row.is-expired { opacity: .6; }
+  .act-ring { position: relative; width: 52px; height: 52px; flex-shrink: 0; border-radius: 50%; background: #000; display: grid; place-items: center; }
+  .act-ring svg.ring-svg { position: absolute; inset: 0; transform: rotate(-90deg); }
+  .act-ring .ring-arc { animation: ring-in 1s cubic-bezier(.2,.8,.2,1) both; }
+  @keyframes ring-in { from { stroke-dashoffset: var(--c); } }
+  .act-ring .core { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; color: #fff; box-shadow: inset 0 1px 0 rgba(255,255,255,.35); }
+  .act-val { display: inline-flex; align-items: center; gap: 4px; font-size: 17px; font-weight: 600; letter-spacing: -.2px; white-space: nowrap; font-variant-numeric: tabular-nums; color: var(--label2); }
+  .act-val svg { width: 17px; height: 17px; flex-shrink: 0; }
+  .act-buy { color: #FF375F; } .act-exp { color: #3CD3FE; }
+  .dark .act-exp { color: #3CD3FE; } :root:not(.dark) .act-exp { color: #00A3C7; }
+  @media (min-width: 640px) { .act-val { min-width: 112px; } }
+  @media (max-width: 639px) { .act-val { font-size: 15px; } .act-val svg { width: 15px; height: 15px; } .act-ring { width: 48px; height: 48px; } }
 
   /* ---------- Liquid Glass Lite (Safari / Firefox) ----------
      ไม่มีการหักเหแสงจริง จึงชดเชยด้วย: กระจกใสขึ้น (blur น้อย + saturate/brightness สูง),
@@ -267,12 +305,19 @@
   .pb-safe { padding-bottom: max(12px, env(safe-area-inset-bottom)); }
 </style>
 </head>
-<body class="min-h-screen bg-bg text-label font-sans antialiased">
+<body class="relative min-h-screen bg-bg text-label font-sans antialiased">
+
+<!-- Header: ท้องฟ้ายามค่ำคืน + ดาวระยิบระยับ (อยู่ด้านหลังเนื้อหา) -->
+<div id="hero" aria-hidden="true">
+  <div class="sky"></div>
+  <div class="moon"></div>
+  <canvas id="stars"></canvas>
+</div>
 
 <!-- Top toolbar: Compact Large Title + glass button group -->
 <header id="topbar" class="edge-top sticky top-0 z-30">
-  <div class="max-w-5xl mx-auto px-4 pt-3 pb-2 flex items-center justify-between gap-3">
-    <h1 class="t-large truncate">การรับประกัน</h1>
+  <div class="max-w-5xl mx-auto px-4 pt-[max(12px,env(safe-area-inset-top))] pb-2 flex items-center justify-between gap-3">
+    <h1 class="t-large truncate">Pakankub</h1>
     <div class="relative shrink-0">
       <div class="ggroup glass">
         <button id="themeBtn" aria-label="สลับธีม">
@@ -299,17 +344,16 @@
   </div>
 </header>
 
-<main class="max-w-5xl mx-auto px-4 pb-36">
-  <p id="subtitle" class="t-sub text-label2 -mt-1"></p>
-  <section id="storageBar" class="mt-3 empty:hidden"></section>
+<main class="relative z-10 max-w-5xl mx-auto px-4 pb-36">
+  <p id="subtitle" class="hero-sub t-sub mt-0.5"></p>
+  <section id="storageBar" class="mt-5 empty:hidden"></section>
 
   <!-- Summary tiles -->
-  <section id="stats" class="mt-4 grid grid-cols-2 lg:grid-cols-4 gap-3"></section>
+  <section id="stats" class="mt-7 grid grid-cols-2 lg:grid-cols-4 gap-3"></section>
 
   <!-- Segmented + pop-up buttons -->
   <div class="mt-6 flex flex-col sm:flex-row sm:items-center gap-3">
-    <div id="segmented" class="seg grid-cols-4 sm:w-[460px]"></div>
-    <div class="flex items-center gap-2 sm:ml-auto">
+    <div class="flex items-center gap-2">
       <select id="filterCategory" aria-label="หมวดหมู่"></select>
       <select id="sortBy" aria-label="เรียงลำดับ">
         <option value="expiry-asc" data-icon="sort-expiry" data-section="เรียงตาม">ใกล้หมดก่อน</option>
@@ -321,7 +365,7 @@
   </div>
 
   <!-- Lockup grid -->
-  <section id="list" class="mt-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-7"></section>
+  <section id="list" class="mt-5"></section>
   <section id="empty" class="hidden mt-14 text-center px-6"></section>
 </main>
 
@@ -895,7 +939,7 @@
           <button data-fs="later" class="gbtn gbtn-text !h-9 t-sub text-label2">ไว้ทีหลัง</button>
         </div></div>`;
     } else if (!FS_SUPPORTED) {
-      bar.innerHTML = `<p class="t-foot text-label2">ข้อมูลเก็บในเบราว์เซอร์ · เปิดด้วย Chrome หรือ Edge เพื่อบันทึกเป็นไฟล์ในเครื่อง</p>`;
+      bar.innerHTML = ''; // เบราว์เซอร์ที่ไม่รองรับไฟล์ในเครื่อง (เช่น Safari) เก็บใน IndexedDB ตามปกติ ไม่ต้องแสดงข้อความ
     } else {
       bar.innerHTML = '';
     }
@@ -1090,13 +1134,78 @@
   edge(window, $('#topbar'));
   edge($('#formScroll'), $('#formHead'));
 
+  // ---------- ดาวระยิบระยับ + ดาวตก บน header ----------
+  (function starfield() {
+    const cv = $('#stars');
+    if (!cv || !cv.getContext) return;
+    const ctx = cv.getContext('2d');
+    const still = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    let W = 0, H = 0, stars = [], shoot = null, nextShoot = performance.now() + 2500, visible = true, raf = 0;
+    function resize() {
+      const dpr = Math.min(2, window.devicePixelRatio || 1);
+      W = cv.clientWidth; H = cv.clientHeight;
+      if (!W || !H) return;
+      cv.width = Math.round(W * dpr); cv.height = Math.round(H * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      const count = Math.round(W * H / 2100);
+      stars = Array.from({ length: count }, () => {
+        const big = Math.random() < .07;
+        return {
+          x: Math.random() * W, y: Math.random() * H * .8,
+          r: big ? 1.2 + Math.random() * .9 : .35 + Math.random() * .75,
+          a: .35 + Math.random() * .65, s: .5 + Math.random() * 2.2, p: Math.random() * Math.PI * 2,
+          c: Math.random() < .15 ? '#cfdcff' : Math.random() < .12 ? '#ffe7c2' : '#ffffff', big,
+        };
+      });
+      draw(performance.now());
+    }
+    function draw(t) {
+      ctx.clearRect(0, 0, W, H);
+      for (const s of stars) {
+        const tw = still ? 1 : .5 + .5 * Math.sin(t / 1000 * s.s + s.p);
+        ctx.globalAlpha = s.a * (.35 + .65 * tw);
+        ctx.fillStyle = s.c;
+        ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2); ctx.fill();
+        if (s.big) { // ประกายรูปกากบาทของดาวดวงใหญ่
+          ctx.globalAlpha = s.a * tw * .45;
+          const L = s.r * (3 + 2 * tw);
+          ctx.fillRect(s.x - L, s.y - .35, L * 2, .7);
+          ctx.fillRect(s.x - .35, s.y - L, .7, L * 2);
+        }
+      }
+      if (!still) {
+        if (!shoot && t > nextShoot) shoot = { x: W * (.35 + Math.random() * .6), y: H * Math.random() * .3, vx: -(4.5 + Math.random() * 3), vy: 1.8 + Math.random() * 1.4, life: 0 };
+        if (shoot) {
+          shoot.life++; shoot.x += shoot.vx; shoot.y += shoot.vy;
+          const tx = shoot.x - shoot.vx * 12, ty = shoot.y - shoot.vy * 12;
+          const g = ctx.createLinearGradient(shoot.x, shoot.y, tx, ty);
+          g.addColorStop(0, 'rgba(255,255,255,.95)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+          ctx.globalAlpha = Math.max(0, 1 - shoot.life / 50);
+          ctx.strokeStyle = g; ctx.lineWidth = 1.5; ctx.lineCap = 'round';
+          ctx.beginPath(); ctx.moveTo(shoot.x, shoot.y); ctx.lineTo(tx, ty); ctx.stroke();
+          if (shoot.life > 50) { shoot = null; nextShoot = t + 5000 + Math.random() * 8000; }
+        }
+      }
+      ctx.globalAlpha = 1;
+    }
+    function loop(t) {
+      draw(t);
+      raf = (visible && !document.hidden) ? requestAnimationFrame(loop) : 0;
+    }
+    const start = () => { if (!raf && !still && visible && !document.hidden) raf = requestAnimationFrame(loop); };
+    new ResizeObserver(resize).observe(cv);
+    new IntersectionObserver(([e]) => { visible = e.isIntersecting; start(); }).observe(cv);
+    document.addEventListener('visibilitychange', start);
+    start();
+  })();
+
   // ---------- Render ----------
   function counts() {
     const c = { all: items.length, active: 0, expiring: 0, expired: 0 };
     items.forEach(i => c[statusOf(i)]++);
     return c;
   }
-  function render() { renderStats(); renderSegmented(); renderList(); }
+  function render() { renderStats(); renderList(); }
 
   function renderStats() {
     const c = counts();
@@ -1117,11 +1226,6 @@
         </div>
         <div class="mt-3 t-sub font-semibold text-label2">${t.label}</div>
       </button>`).join('');
-  }
-
-  function renderSegmented() {
-    const segs = [['all', 'ทั้งหมด'], ['active', 'คุ้มครอง'], ['expiring', 'ใกล้หมด'], ['expired', 'หมดแล้ว']];
-    $('#segmented').innerHTML = segs.map(([k, l]) => `<button data-status="${k}" class="${ui.status === k ? 'on' : ''}">${l}</button>`).join('');
   }
 
   function filtered() {
@@ -1178,24 +1282,65 @@
       return;
     }
     empty.classList.add('hidden');
-    $('#list').innerHTML = list.map(i => {
-      const st = statusOf(i), S = STATUS[st], cat = catOf(i.category), d = daysLeft(i.expiryDate);
-      return `
-      <button type="button" data-id="${i.id}" class="lockup text-left fade-in min-w-0">
-        <div class="poster relative aspect-[4/3] rounded-[26px] overflow-hidden">
-          ${poster(i)}
-          <span class="absolute top-2.5 left-2.5 inline-flex items-center gap-1 h-7 px-2.5 rounded-full glass t-cap font-semibold text-label">
-            <span class="h-2 w-2 rounded-full ${S.bg}"></span>${S.label}
-          </span>
-          <div class="absolute left-4 right-4 bottom-3 h-1 rounded-full bg-white/35 overflow-hidden"><div class="h-full rounded-full bg-white" style="width:${progress(i)}%"></div></div>
+
+    // การ์ดแบบ "กิจกรรม": หัวข้อสี + ประโยคสรุป + แถวละสินค้า (วงแหวน, ชื่อ, วันซื้อ, วันหมดประกัน)
+    const n = { active: 0, expiring: 0, expired: 0 };
+    list.forEach(i => n[statusOf(i)]++);
+    const HEAD = {
+      all:      ['สินค้าทั้งหมด', '#FF9F0A', n.active + n.expiring
+                  ? `ยังคุ้มครองอยู่ ${n.active + n.expiring} จาก ${list.length} รายการ${n.expiring ? ` · ใกล้หมด ${n.expiring} รายการ` : ''}`
+                  : `สินค้า ${list.length} รายการหมดประกันแล้วทั้งหมด`],
+      active:   ['กำลังคุ้มครอง', '#30D158', `มี ${list.length} รายการที่ยังคุ้มครองตามปกติ`],
+      expiring: ['ใกล้หมดประกัน', '#FF9F0A', `${list.length} รายการจะหมดประกันภายใน ${SOON_DAYS} วัน`],
+      expired:  ['หมดประกันแล้ว', '#FF453A', `${list.length} รายการหมดประกันแล้ว`],
+    }[ui.status];
+    $('#list').innerHTML = `
+      <div class="tile rounded-[26px] bg-card px-5 pt-5 pb-3 sm:px-6 fade-in">
+        <div class="flex items-center gap-1.5 t-headline" style="color:${HEAD[1]}">
+          <svg class="h-[22px] w-[22px]" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2.5l8 3.3v6c0 5-3.4 8.9-8 10.7-4.6-1.8-8-5.7-8-10.7v-6z" opacity=".95"/><path d="M8.6 12.2l2.4 2.4 4.6-4.8" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          ${HEAD[0]}
         </div>
-        <div class="mt-2.5 px-1">
-          <div class="t-headline !text-[15px] leading-tight line-clamp-1">${esc(i.name)}</div>
-          <div class="mt-0.5 t-foot text-label2 line-clamp-1">${esc(i.brand || cat.label)}</div>
-          <div class="mt-0.5 t-foot font-medium ${st === 'active' ? 'text-label2' : S.text}">${fmtLeft(d)}</div>
+        <h2 class="mt-2 t-title2">${HEAD[2]}</h2>
+        <div class="mt-3 flex justify-end gap-4 t-cap text-label2 pr-1">
+          <span class="inline-flex items-center gap-1"><svg class="h-3.5 w-3.5 act-buy" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">${BUY_ICON}</svg>วันซื้อ</span>
+          <span class="inline-flex items-center gap-1"><svg class="h-3.5 w-3.5 act-exp" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">${EXP_ICON}</svg>หมดประกัน</span>
         </div>
-      </button>`;
-    }).join('');
+        <div class="mt-1 flex flex-col">
+          ${list.map(i => {
+            const st = statusOf(i), S = STATUS[st], d = daysLeft(i.expiryDate);
+            return `
+            <button type="button" data-id="${i.id}" class="act-row ${st === 'expired' ? 'is-expired' : ''}">
+              ${actRing(i, st)}
+              <span class="flex-1 min-w-0">
+                <span class="block text-[17px] font-semibold leading-tight truncate">${esc(i.name)}</span>
+                <span class="block mt-1 t-foot font-medium truncate ${st === 'active' ? 'text-label2' : S.text}">${fmtLeft(d)}</span>
+              </span>
+              <span class="flex flex-col items-end gap-1 sm:flex-row sm:items-center sm:gap-5 shrink-0">
+                <span class="act-val"><svg class="act-buy" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">${BUY_ICON}</svg>${fmtShort(i.purchaseDate)}</span>
+                <span class="act-val"><svg class="act-exp" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">${EXP_ICON}</svg>${fmtShort(i.expiryDate)}</span>
+              </span>
+            </button>`;
+          }).join('')}
+        </div>
+      </div>`;
+  }
+
+  const BUY_ICON = '<path d="M5 8h14l-1.2 12H6.2z"/><path d="M9 8V6.5a3 3 0 016 0V8"/>';
+  const EXP_ICON = '<path d="M12 3l7 3v5.5c0 4.3-3 7.7-7 9.5-4-1.8-7-5.2-7-9.5V6z"/><path d="M9 12l2 2 4-4"/>';
+  const RING_COLOR = { active: '#30D158', expiring: '#FF9F0A', expired: '#8E8E93' };
+  const fmtShort = (iso) => iso ? parseDate(iso).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' }) : '--';
+  // วงแหวนแบบ Activity: ส่วนที่เหลือของระยะประกัน + ไอคอนหมวดหมู่ตรงกลาง
+  function actRing(i, st) {
+    const cat = catOf(i.category), r = 22, C = +(2 * Math.PI * r).toFixed(2), col = RING_COLOR[st];
+    const remain = st === 'expired' ? 0 : Math.max(.04, 1 - progress(i) / 100);
+    return `<span class="act-ring">
+      <svg class="ring-svg" viewBox="0 0 52 52" aria-hidden="true">
+        <circle cx="26" cy="26" r="${r}" fill="none" stroke="${col}" stroke-opacity=".24" stroke-width="6"/>
+        ${remain ? `<circle class="ring-arc" cx="26" cy="26" r="${r}" fill="none" stroke="${col}" stroke-width="6" stroke-linecap="round"
+          stroke-dasharray="${C}" stroke-dashoffset="${(C * (1 - remain)).toFixed(2)}" style="--c:${C}"/>` : ''}
+      </svg>
+      <span class="core" style="${grad(cat)}">${icon(cat.id, 'h-[15px] w-[15px]')}</span>
+    </span>`;
   }
 
   // ---------- Detail sheet ----------
@@ -1694,7 +1839,6 @@
     render();
   };
   $('#stats').addEventListener('click', setStatus);
-  $('#segmented').addEventListener('click', setStatus);
 
   let searchTimer;
   $('#search').addEventListener('input', (e) => {
