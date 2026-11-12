@@ -117,6 +117,36 @@
   html.lg-on.dark [data-lg="regular"] { --lg-tint: rgba(30,30,32,.4); }
   html.lg-on.dark [data-lg="strong"]  { --lg-tint: rgba(30,30,32,.74); }
 
+  /* ---------- Liquid Glass Lite (Safari / Firefox) ----------
+     ไม่มีการหักเหแสงจริง จึงชดเชยด้วย: กระจกใสขึ้น (blur น้อย + saturate/brightness สูง),
+     ขอบหนาแบบเลนส์ (inset shadow หลายชั้น), ขอบรุ้งจางๆ (dispersion), และแสงตามนิ้วจากโหมดเต็ม */
+  html.lg-on:not(.lg-full) [data-lg="clear"]   { -webkit-backdrop-filter: blur(3px) saturate(210%) brightness(1.08); backdrop-filter: blur(3px) saturate(210%) brightness(1.08); }
+  html.lg-on:not(.lg-full) [data-lg="regular"] { -webkit-backdrop-filter: blur(7px) saturate(200%) brightness(1.06); backdrop-filter: blur(7px) saturate(200%) brightness(1.06); }
+  html.lg-on:not(.lg-full) [data-lg="strong"]  { -webkit-backdrop-filter: blur(26px) saturate(190%); backdrop-filter: blur(26px) saturate(190%); }
+  html.lg-on.dark:not(.lg-full) [data-lg="clear"],
+  html.lg-on.dark:not(.lg-full) [data-lg="regular"] { -webkit-backdrop-filter: blur(6px) saturate(190%) brightness(.9); backdrop-filter: blur(6px) saturate(190%) brightness(.9); }
+  html.lg-on:not(.lg-full) .glass, html.lg-on:not(.lg-full) .glass-strong {
+    box-shadow:
+      inset 0 0 0 .5px rgba(255,255,255,.55),
+      inset 1.5px 1.5px 1px -.5px rgba(255,255,255,.95),
+      inset -1px -1px 1px -.5px rgba(255,255,255,.6),
+      inset 0 6px 10px -6px rgba(255,255,255,.55),
+      inset 0 -6px 12px -8px rgba(0,0,0,.12),
+      inset 3px 0 4px -3px rgba(255,90,120,.28),
+      inset -3px 0 4px -3px rgba(60,150,255,.3),
+      0 0 0 .5px rgba(0,0,0,.05), 0 8px 26px rgba(0,0,0,.13);
+  }
+  html.lg-on.dark:not(.lg-full) .glass, html.lg-on.dark:not(.lg-full) .glass-strong {
+    box-shadow:
+      inset 0 0 0 .5px rgba(255,255,255,.14),
+      inset 1.5px 1.5px 1px -.5px rgba(255,255,255,.4),
+      inset -1px -1px 1px -.5px rgba(255,255,255,.18),
+      inset 0 6px 10px -6px rgba(255,255,255,.14),
+      inset 3px 0 4px -3px rgba(255,90,120,.22),
+      inset -3px 0 4px -3px rgba(60,150,255,.25),
+      0 8px 26px rgba(0,0,0,.5);
+  }
+
   /* เมื่อเปิด Liquid Glass ให้ fade ด้านล่างบางลง เพื่อให้เห็นเนื้อหาหักเหผ่านกระจก */
   html.lg-on .edge-bottom::before { inset: 55% 0 0 0; background: linear-gradient(rgb(var(--bg) / 0), rgb(var(--bg) / .7)); }
 
@@ -931,7 +961,14 @@
   // ค่าจาก Figma iOS 27 UI Kit → Liquid Glass: Frost 6, Refraction 70, Depth 30, Dispersion 20, Opacity 25
   const LiquidGlass = (() => {
     const NS = 'http://www.w3.org/2000/svg';
-    const supported = /Chrome\/\d+/.test(navigator.userAgent) && typeof ResizeObserver !== 'undefined';
+    // full = หักเหแสงจริงด้วย SVG filter (Chrome/Edge)
+    // lite = Safari/Firefox: WebKit ยังไม่รองรับ SVG filter ใน backdrop-filter จึงใช้กระจกใส + ขอบสะท้อน + ขอบรุ้ง + แสงตามนิ้ว
+    // ทดสอบโหมด lite บน Chrome ได้ด้วย ?lg=lite
+    const forceLite = /[?&]lg=lite\b/.test(location.search);
+    const hasRO = typeof ResizeObserver !== 'undefined';
+    const full = !forceLite && hasRO && /Chrome\/\d+/.test(navigator.userAgent);
+    const lite = !full && hasRO && (CSS.supports('backdrop-filter', 'blur(1px)') || CSS.supports('-webkit-backdrop-filter', 'blur(1px)'));
+    const supported = full || lite;
     const reduced = window.matchMedia('(prefers-reduced-transparency: reduce)').matches;
     const MODE = { clear: { blur: 1.2, refr: 1 }, regular: { blur: 3, refr: 1 }, strong: { blur: 9, refr: .7 } };
     const REFRACTION = 70, DEPTH = .3, DISPERSION = .2;
@@ -999,7 +1036,7 @@
       const r = Math.round(Math.min(parseFloat(getComputedStyle(el).borderTopLeftRadius) || 0, w / 2, h / 2));
       const mode = el.classList.contains('glass-strong') ? 'strong' : (el.matches('.gbtn, .ggroup') || h <= 32) ? 'clear' : 'regular';
       el.dataset.lg = mode;
-      el.style.backdropFilter = `url(#${filterFor(w, h, r, mode)})`;
+      if (full) el.style.backdropFilter = `url(#${filterFor(w, h, r, mode)})`;
     }
     function track(el) { if (!els.has(el)) { els.add(el); ro.observe(el); } }
     function scan(root) {
@@ -1010,16 +1047,19 @@
     function setEnabled(on) {
       enabled = !!on && supported && !reduced;
       document.documentElement.classList.toggle('lg-on', enabled);
+      document.documentElement.classList.toggle('lg-full', enabled && full);
       els.forEach(el => enabled ? apply(el) : clear(el));
     }
     function init() {
       if (!supported) return;
-      const svg = document.createElementNS(NS, 'svg');
-      svg.setAttribute('aria-hidden', 'true');
-      svg.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden';
-      defs = document.createElementNS(NS, 'defs');
-      svg.appendChild(defs);
-      document.body.appendChild(svg);
+      if (full) {
+        const svg = document.createElementNS(NS, 'svg');
+        svg.setAttribute('aria-hidden', 'true');
+        svg.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden';
+        defs = document.createElementNS(NS, 'defs');
+        svg.appendChild(defs);
+        document.body.appendChild(svg);
+      }
       ro = new ResizeObserver(entries => entries.forEach(e => apply(e.target)));
       new MutationObserver(muts => {
         let removed = false;
@@ -1039,7 +1079,7 @@
         g.style.setProperty('--ly', `${e.clientY - r.top}px`);
       }, { passive: true });
     }
-    return { init, setEnabled, supported, reduced, get enabled() { return enabled; } };
+    return { init, setEnabled, supported, full, reduced, get enabled() { return enabled; } };
   })();
 
   // ---------- Scroll edge effect ----------
@@ -1675,7 +1715,8 @@
 
   // Menu
   function renderLgState() {
-    $('#lgState').textContent = !LiquidGlass.supported ? 'ใช้ Chrome/Edge' : LiquidGlass.reduced ? 'ปิดโดยระบบ' : LiquidGlass.enabled ? 'เปิด' : 'ปิด';
+    $('#lgState').textContent = !LiquidGlass.supported ? 'ไม่รองรับ' : LiquidGlass.reduced ? 'ปิดโดยระบบ'
+      : LiquidGlass.enabled ? (LiquidGlass.full ? 'เปิด' : 'เปิด · Lite') : 'ปิด';
   }
   const fmtBytes = (b) => b >= 1e9 ? `${(b / 1e9).toFixed(1)} GB` : b >= 1e6 ? `${(b / 1e6).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1e3))} KB`;
   async function renderStorageUsage() {
@@ -1706,7 +1747,7 @@
     if (a === 'import') $('#importFile').click();
     if (a === 'sample') loadSample();
     if (a === 'lg') {
-      if (!LiquidGlass.supported) return toast('เอฟเฟกต์หักเหแสงใช้ได้บน Chrome หรือ Edge');
+      if (!LiquidGlass.supported) return toast('เบราว์เซอร์นี้ไม่รองรับเอฟเฟกต์กระจก');
       if (LiquidGlass.reduced) return toast('ระบบตั้งค่าให้ลดความโปร่งใสไว้');
       LiquidGlass.setEnabled(!LiquidGlass.enabled);
       try { localStorage.setItem('wt-lg', LiquidGlass.enabled ? '1' : '0'); } catch (_) {}
