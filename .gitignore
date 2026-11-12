@@ -1,0 +1,7 @@
+# ข้อมูลส่วนตัว — ห้ามขึ้น Git
+warranty-data*.json
+warranty-backup-*.json
+*.crswap
+
+# ไฟล์ตั้งค่าเครื่องมือในเครื่อง
+.claude/

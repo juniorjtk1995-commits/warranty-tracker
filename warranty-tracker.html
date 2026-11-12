@@ -1,0 +1,1759 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#F2F2F7" media="(prefers-color-scheme: light)" />
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)" />
+<title>Warranty Tracker</title>
+<meta name="description" content="บันทึกและติดตามการรับประกันสินค้า — ข้อมูลเก็บในเครื่องของคุณเท่านั้น" />
+<!-- เพิ่มลงหน้าจอโฮมบน iPhone/Android แล้วเปิดเต็มจอเหมือนแอป -->
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="apple-mobile-web-app-title" content="Warranty" />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230088FF'/%3E%3Cpath d='M32 13l15 6v11c0 9-6 16-15 20-9-4-15-11-15-20V19z' fill='none' stroke='white' stroke-width='4' stroke-linejoin='round'/%3E%3Cpath d='M25 32l5 5 9-9' fill='none' stroke='white' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<script src="https://cdn.tailwindcss.com/3.4.16"></script>
+<script>
+  // Design tokens จาก iOS & iPadOS 27 UI Kit (Figma): Accents, Labels, Fills, Backgrounds – Grouped
+  const acc = (v) => `rgb(var(--${v}) / <alpha-value>)`;
+  tailwind.config = {
+    darkMode: 'class',
+    theme: {
+      extend: {
+        fontFamily: { sans: ['-apple-system', 'BlinkMacSystemFont', '"SF Pro Text"', 'Inter', '"Noto Sans Thai"', 'system-ui', 'sans-serif'] },
+        colors: {
+          bg: acc('bg'), card: acc('card'),
+          label: 'var(--label)', label2: 'var(--label2)', label3: 'var(--label3)', sep: 'var(--sep)',
+          sblue: acc('blue'), sgreen: acc('green'), sorange: acc('orange'), sred: acc('red'), sindigo: acc('indigo'), sgray: acc('gray'),
+        },
+      },
+    },
+  };
+  (function () {
+    let t = null;
+    try { t = localStorage.getItem('wt-theme'); } catch (e) {}
+    if (t === 'dark' || (!t && window.matchMedia('(prefers-color-scheme: dark)').matches)) document.documentElement.classList.add('dark');
+  })();
+</script>
+<style>
+  :root {
+    /* Backgrounds – Grouped */
+    --bg: 242 242 247; --card: 255 255 255;
+    /* Labels */
+    --label: #000; --label2: rgba(60, 60, 67, .6); --label3: rgba(60, 60, 67, .3); --sep: #E6E6E6;
+    /* Fills */
+    --fill: rgba(118, 118, 128, .12); --fill2: rgba(116, 116, 128, .08);
+    /* Accents (Light) */
+    --blue: 0 136 255; --green: 52 199 89; --orange: 255 141 40; --red: 255 56 60; --indigo: 97 85 245; --gray: 142 142 147;
+    /* Liquid Glass */
+    --glass: rgba(255, 255, 255, .64);
+    --glass-strong: rgba(250, 250, 250, .86);
+    --glass-shadow: inset 0 1px 0 rgba(255,255,255,.95), inset 0 0 0 .5px rgba(255,255,255,.7), 0 0 0 .5px rgba(0,0,0,.05), 0 8px 28px rgba(0,0,0,.09);
+    --tile-shadow: 0 0 0 .5px rgba(0,0,0,.03), 0 4px 18px rgba(0,0,0,.05);
+    color-scheme: light;
+  }
+  .dark {
+    --bg: 0 0 0; --card: 28 28 30;
+    --label: #fff; --label2: rgba(235, 235, 245, .6); --label3: rgba(235, 235, 245, .3); --sep: #38383A;
+    --fill: rgba(118, 118, 128, .24); --fill2: rgba(118, 118, 128, .18);
+    /* Accents (Dark) */
+    --blue: 0 145 255; --green: 48 209 88; --orange: 255 146 48; --red: 255 66 69; --indigo: 109 124 255; --gray: 142 142 147;
+    --glass: rgba(44, 44, 46, .58);
+    --glass-strong: rgba(36, 36, 38, .9);
+    --glass-shadow: inset 0 1px 0 rgba(255,255,255,.16), inset 0 0 0 .5px rgba(255,255,255,.1), 0 8px 28px rgba(0,0,0,.5);
+    --tile-shadow: none;
+    color-scheme: dark;
+  }
+  html { -webkit-text-size-adjust: 100%; }
+  body { -webkit-tap-highlight-color: transparent; font-size: 17px; line-height: 22px; letter-spacing: -0.43px; }
+  .t-large { font-size: 34px; line-height: 41px; font-weight: 700; letter-spacing: .4px; }
+  .t-title2 { font-size: 22px; line-height: 28px; font-weight: 700; letter-spacing: -.26px; }
+  .t-headline { font-size: 17px; line-height: 22px; font-weight: 600; letter-spacing: -.43px; }
+  .t-sub { font-size: 15px; line-height: 20px; letter-spacing: -.23px; }
+  .t-foot { font-size: 13px; line-height: 18px; letter-spacing: -.08px; }
+  .t-cap { font-size: 12px; line-height: 16px; letter-spacing: 0; }
+  .fill { background: var(--fill); }
+  .line-clamp-1 { display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+
+  /* ---------- Liquid Glass ---------- */
+  .glass { background: var(--glass); -webkit-backdrop-filter: blur(14px) saturate(190%); backdrop-filter: blur(14px) saturate(190%); box-shadow: var(--glass-shadow); }
+  .glass-strong { background: var(--glass-strong); -webkit-backdrop-filter: blur(30px) saturate(190%); backdrop-filter: blur(30px) saturate(190%); box-shadow: var(--glass-shadow); }
+  .gbtn { height: 44px; min-width: 44px; border-radius: 999px; display: inline-grid; place-items: center; color: var(--label);
+          transition: transform .35s cubic-bezier(.3,1.6,.5,1), background .2s; }
+  .gbtn:active { transform: scale(1.12); }
+  .gbtn svg { width: 22px; height: 22px; }
+  .gbtn-text { padding: 0 16px; font-weight: 500; }
+  .gbtn-prominent { background: rgb(var(--blue)); color: #fff; box-shadow: inset 0 1px 0 rgba(255,255,255,.35), 0 6px 18px rgb(var(--blue) / .35); }
+  .ggroup { height: 44px; border-radius: 999px; display: inline-flex; align-items: center; padding: 0 4px; }
+  .ggroup > button { height: 44px; width: 44px; display: grid; place-items: center; border-radius: 999px; color: var(--label); transition: transform .35s cubic-bezier(.3,1.6,.5,1); }
+  .ggroup > button:active { transform: scale(1.15); }
+  .ggroup svg { width: 22px; height: 22px; }
+
+  /* Liquid Glass (เปิดเมื่อเบราว์เซอร์รองรับ SVG backdrop-filter): กระจกใสขึ้น + ขอบสะท้อนแสง + แสงตามนิ้ว */
+  :root {
+    --lg-glow: rgba(255,255,255,.38);
+    --lg-rim: inset 1.5px 1.5px 1px -.5px rgba(255,255,255,.95), inset -1px -1px 1px -.5px rgba(255,255,255,.7),
+              inset 0 0 0 .5px rgba(255,255,255,.45), inset 0 0 16px rgba(255,255,255,.22),
+              0 0 0 .5px rgba(0,0,0,.05), 0 8px 26px rgba(0,0,0,.13);
+  }
+  .dark {
+    --lg-glow: rgba(255,255,255,.12);
+    --lg-rim: inset 1.5px 1.5px 1px -.5px rgba(255,255,255,.38), inset -1px -1px 1px -.5px rgba(255,255,255,.2),
+              inset 0 0 0 .5px rgba(255,255,255,.12), inset 0 0 16px rgba(255,255,255,.06), 0 8px 26px rgba(0,0,0,.5);
+  }
+  html.lg-on .glass, html.lg-on .glass-strong {
+    background-color: var(--lg-tint, var(--glass));
+    background-image: radial-gradient(circle 90px at var(--lx, 30%) var(--ly, -20%), var(--lg-glow), transparent 70%);
+    box-shadow: var(--lg-rim);
+  }
+  html.lg-on [data-lg="clear"]   { --lg-tint: rgba(255,255,255,.12); }
+  html.lg-on [data-lg="regular"] { --lg-tint: rgba(255,255,255,.25); }
+  html.lg-on [data-lg="strong"]  { --lg-tint: rgba(250,250,250,.72); }
+  html.lg-on.dark [data-lg="clear"]   { --lg-tint: rgba(44,44,48,.2); }
+  html.lg-on.dark [data-lg="regular"] { --lg-tint: rgba(30,30,32,.4); }
+  html.lg-on.dark [data-lg="strong"]  { --lg-tint: rgba(30,30,32,.74); }
+
+  /* เมื่อเปิด Liquid Glass ให้ fade ด้านล่างบางลง เพื่อให้เห็นเนื้อหาหักเหผ่านกระจก */
+  html.lg-on .edge-bottom::before { inset: 55% 0 0 0; background: linear-gradient(rgb(var(--bg) / 0), rgb(var(--bg) / .7)); }
+
+  /* Scroll edge effect (แทนเส้นคั่นของ nav bar แบบเดิม) */
+  .edge-top { position: relative; }
+  .edge-top::before { content: ''; position: absolute; inset: 0 0 -24px 0; pointer-events: none; z-index: -1; opacity: 0; transition: opacity .25s;
+    background: linear-gradient(rgb(var(--bg)) 30%, rgb(var(--bg) / 0));
+    -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+    -webkit-mask-image: linear-gradient(#000 55%, transparent); mask-image: linear-gradient(#000 55%, transparent); }
+  .edge-top.scrolled::before { opacity: 1; }
+  .edge-bottom::before { content: ''; position: absolute; inset: -28px 0 0 0; pointer-events: none; z-index: -1;
+    background: linear-gradient(rgb(var(--bg) / 0), rgb(var(--bg) / .85) 60%);
+    -webkit-mask-image: linear-gradient(transparent, #000 50%); mask-image: linear-gradient(transparent, #000 50%); }
+
+  /* ---------- Lists (Inset grouped, iOS 27: radius 26, rows 52) ---------- */
+  .group-list { background: rgb(var(--card)); border-radius: 26px; overflow: hidden; }
+  .group-list > .row + .row { position: relative; }
+  .group-list > .row + .row::before { content: ''; position: absolute; top: 0; left: 16px; right: 16px; height: .5px; background: var(--sep); }
+  .row { min-height: 52px; display: flex; align-items: center; gap: 12px; padding: 0 16px; }
+  .row-label { flex-shrink: 0; width: 104px; color: var(--label); }
+  .row input, .row select, .row textarea { background: transparent; outline: none; min-width: 0; flex: 1; color: var(--label); }
+  .row input::placeholder, .row textarea::placeholder { color: var(--label3); }
+  .row .detail { color: var(--label2); }
+  .chev { width: 14px; height: 14px; color: var(--label3); flex-shrink: 0; }
+  .pill-value { height: 34px; padding: 0 12px; border-radius: 999px; background: var(--fill); display: inline-flex; align-items: center; color: var(--label); }
+  .section-header { font-size: 15px; line-height: 20px; font-weight: 600; color: var(--label2); padding: 0 20px 8px; margin-top: 28px; letter-spacing: -.23px; }
+  .section-footer { font-size: 13px; line-height: 18px; color: var(--label2); padding: 8px 20px 0; }
+  .row.invalid .row-label { color: rgb(var(--red)); }
+  .row.invalid { animation: shake .35s; }
+  @keyframes shake { 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+
+  /* Stepper */
+  .stepper { height: 34px; border-radius: 999px; background: var(--fill); display: inline-flex; align-items: center; }
+  .stepper button { width: 46px; height: 34px; display: grid; place-items: center; color: var(--label); }
+  .stepper button:active { opacity: .4; }
+  .stepper .div { width: 1px; height: 18px; background: var(--label3); }
+
+  /* Chips (เลือกระยะเวลารับประกัน) */
+  .chip { height: 40px; border-radius: 999px; background: var(--fill); color: var(--label); font-size: 15px; font-weight: 500; letter-spacing: -.23px;
+    transition: background .2s, color .2s, box-shadow .2s, opacity .2s, transform .35s cubic-bezier(.3,1.6,.5,1); }
+  .chip:active:not(:disabled) { transform: scale(1.07); }
+  .chip[aria-checked="true"] { background: rgb(var(--blue)); color: #fff; font-weight: 600; box-shadow: 0 4px 14px rgb(var(--blue) / .3); }
+  .chip:disabled { opacity: .35; cursor: not-allowed; }
+  .chip:focus-visible { outline: 3px solid rgb(var(--blue) / .5); outline-offset: 2px; }
+
+  /* Checkbox วงกลมแบบ iOS */
+  .row .ios-check { -webkit-appearance: none; appearance: none; flex: none; width: 24px; height: 24px; margin: 0; border-radius: 999px;
+    border: 1.5px solid var(--label3); cursor: pointer; transition: background-color .2s, border-color .2s, transform .3s cubic-bezier(.3,1.6,.5,1); }
+  .row .ios-check:checked { border-color: rgb(var(--blue)); background: rgb(var(--blue)) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5.5 12.5l4 4L18.5 7.5'/%3E%3C/svg%3E") center / 15px no-repeat; }
+  .row .ios-check:active { transform: scale(.88); }
+  .row .ios-check:focus-visible { outline: 3px solid rgb(var(--blue) / .5); outline-offset: 2px; }
+
+  /* Segmented control (capsule) */
+  .seg { background: var(--fill); border-radius: 999px; padding: 3px; display: grid; }
+  .seg button { height: 30px; border-radius: 999px; font-size: 14px; font-weight: 500; color: var(--label); transition: background .25s, box-shadow .25s; }
+  .seg button.on { background: rgb(var(--card)); box-shadow: 0 2px 8px rgba(0,0,0,.12), 0 0 0 .5px rgba(0,0,0,.04); font-weight: 600; }
+  .dark .seg button.on { background: #5B5B5F; }
+
+  /* Lockups */
+  .lockup { outline: none; -webkit-user-select: none; user-select: none; }
+  .lockup .poster { transition: transform .35s cubic-bezier(.2,.9,.3,1.2), box-shadow .3s; box-shadow: var(--tile-shadow); }
+  .lockup:hover .poster, .lockup:focus-visible .poster { transform: translateY(-3px) scale(1.03); box-shadow: 0 16px 34px rgba(0,0,0,.18); }
+  .lockup:focus-visible .poster { outline: 3px solid rgb(var(--blue)); outline-offset: 3px; }
+  .lockup:active .poster { transform: scale(.96); transition-duration: .12s; }
+  .tile { box-shadow: var(--tile-shadow); }
+
+  /* Sheets / alerts / menus */
+  .sheet { animation: sheet-up .45s cubic-bezier(.32,.72,0,1); }
+  @keyframes sheet-up { from { transform: translateY(105%); } to { transform: none; } }
+  @media (min-width: 640px) {
+    .sheet { animation: sheet-pop .35s cubic-bezier(.32,.72,0,1); }
+    @keyframes sheet-pop { from { opacity: 0; transform: translateY(30px) scale(.96); } to { opacity: 1; transform: none; } }
+  }
+  /* Dark mode: sheet ใช้พื้นหลังแบบ elevated เพื่อแยกจากหน้าหลัก */
+  .dark .sheet { background: #1C1C1E; }
+  .dark .sheet .group-list { background: #2C2C2E; }
+  .dark .sheet .edge-top::before { background: linear-gradient(#1C1C1E 30%, rgba(28,28,30,0)); }
+  .backdrop { animation: fade .3s ease-out; }
+  .alert-in { animation: alert .32s cubic-bezier(.3,1.5,.5,1); }
+  @keyframes alert { from { opacity: 0; transform: scale(.85); } to { opacity: 1; transform: none; } }
+  .pop { animation: pop .3s cubic-bezier(.3,1.4,.5,1); transform-origin: top right; }
+  @keyframes pop { from { opacity: 0; transform: scale(.6); } to { opacity: 1; transform: none; } }
+  @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+  .fade-in { animation: fade .25s ease-out; }
+  .toast-in { animation: toast .45s cubic-bezier(.3,1.5,.5,1); }
+  @keyframes toast { from { opacity: 0; transform: translate(-50%, -20px) scale(.9); } to { opacity: 1; transform: translate(-50%, 0); } }
+
+  /* ---------- Menu & Pop-up Button (iOS 27 UI Kit: Menus / Pop-up Buttons) ---------- */
+  .ios-menu { position: fixed; z-index: 80; border-radius: 34px; padding: 10px 0; overflow-y: auto; overscroll-behavior: contain;
+    animation: menu-in .42s cubic-bezier(.3,1.32,.5,1); }
+  .ios-menu.out { animation: menu-out .16s ease-in forwards; pointer-events: none; }
+  @keyframes menu-in { from { opacity: 0; transform: scale(.35); } 40% { opacity: 1; } to { opacity: 1; transform: none; } }
+  @keyframes menu-out { to { opacity: 0; transform: scale(.8); } }
+  .menu-item { display: flex; align-items: center; gap: 10px; width: calc(100% - 16px); margin: 0 8px; min-height: 40px;
+    padding: 9px 12px 9px 8px; border-radius: 14px; color: var(--label); text-align: left; outline: none; }
+  .menu-item:hover, .menu-item:focus-visible { background: var(--fill); }
+  .menu-item:active { transform: scale(.98); }
+  .menu-item .mcheck { width: 18px; flex-shrink: 0; display: grid; place-items: center; }
+  .menu-item .mcheck svg { width: 16px; height: 16px; }
+  .menu-item .micon { width: 20px; height: 20px; flex-shrink: 0; }
+  .menu-sep { height: 18px; display: flex; align-items: center; padding: 0 16px; }
+  .menu-sep::after { content: ''; flex: 1; height: 1px; background: var(--sep); }
+  .menu-section { padding: 6px 20px 5px; font-size: 13px; line-height: 18px; color: var(--label2); letter-spacing: -.08px; }
+  .popup-btn { height: 40px; padding: 0 12px 0 16px; border-radius: 999px; display: inline-flex; align-items: center; gap: 6px;
+    font-size: 15px; font-weight: 500; color: rgb(var(--blue)); white-space: nowrap; transition: transform .35s cubic-bezier(.3,1.6,.5,1); }
+  .popup-btn:active { transform: scale(1.06); }
+  .popup-row { display: inline-flex; align-items: center; gap: 6px; color: var(--label2); min-width: 0; max-width: 65%; }
+  .popup-row .plabel { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .popup-btn svg, .popup-row svg { width: 13px; height: 13px; flex-shrink: 0; }
+  .popup-btn[aria-expanded="true"], .popup-row[aria-expanded="true"] { opacity: .5; }
+
+  input[type="date"] { font: inherit; }
+  input[type="date"]::-webkit-calendar-picker-indicator { opacity: 0; position: absolute; inset: 0; width: 100%; cursor: pointer; }
+  input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
+  input[type=search]::-webkit-search-cancel-button { -webkit-appearance: none; }
+  select { -webkit-appearance: none; appearance: none; }
+  select option { color: #000; }
+  .pb-safe { padding-bottom: max(12px, env(safe-area-inset-bottom)); }
+</style>
+</head>
+<body class="min-h-screen bg-bg text-label font-sans antialiased">
+
+<!-- Top toolbar: Compact Large Title + glass button group -->
+<header id="topbar" class="edge-top sticky top-0 z-30">
+  <div class="max-w-5xl mx-auto px-4 pt-3 pb-2 flex items-center justify-between gap-3">
+    <h1 class="t-large truncate">การรับประกัน</h1>
+    <div class="relative shrink-0">
+      <div class="ggroup glass">
+        <button id="themeBtn" aria-label="สลับธีม">
+          <svg class="dark:hidden" fill="currentColor" viewBox="0 0 24 24"><path d="M20.5 14.6A8.5 8.5 0 019.4 3.5a8.5 8.5 0 1011.1 11.1z"/></svg>
+          <svg class="hidden dark:block" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2" fill="currentColor"/><path stroke-linecap="round" d="M12 2.5v2m0 15v2M5.3 5.3l1.4 1.4m10.6 10.6l1.4 1.4M2.5 12h2m15 0h2M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></svg>
+        </button>
+        <button id="menuBtn" aria-label="เพิ่มเติม">
+          <svg fill="currentColor" viewBox="0 0 24 24"><circle cx="5.5" cy="12" r="1.9"/><circle cx="12" cy="12" r="1.9"/><circle cx="18.5" cy="12" r="1.9"/></svg>
+        </button>
+      </div>
+      <div id="menu" class="hidden pop absolute right-0 mt-2 w-[250px] rounded-[34px] glass-strong py-2.5 text-label">
+        <div id="menuFile"></div>
+        <button data-action="export" class="menu-row"><svg viewBox="0 0 24 24"><path d="M12 15V3m0 0l-4 4m4-4l4 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/></svg>ส่งออกข้อมูล</button>
+        <button data-action="import" class="menu-row"><svg viewBox="0 0 24 24"><path d="M12 3v12m0 0l-4-4m4 4l4-4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"/></svg>นำเข้าข้อมูล</button>
+        <button data-action="sample" class="menu-row"><svg viewBox="0 0 24 24"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg>เพิ่มข้อมูลตัวอย่าง</button>
+        <button data-action="lg" id="lgToggle" class="menu-row"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M8 9.5a4.5 4.5 0 015-2"/></svg><span class="flex-1">Liquid Glass</span><span id="lgState" class="t-foot text-label2"></span></button>
+        <div class="menu-sep"></div>
+        <button data-action="clear" class="menu-row !text-sred"><svg viewBox="0 0 24 24"><path d="M4 7h16M10 11v6m4-6v6M6 7l1 13h10l1-13M9 7V4h6v3"/></svg>ลบข้อมูลทั้งหมด</button>
+        <div class="menu-sep"></div>
+        <div id="storageUsage" class="menu-section !pb-1"></div>
+      </div>
+      <input id="importFile" type="file" accept="application/json,.json" class="hidden" />
+    </div>
+  </div>
+</header>
+
+<main class="max-w-5xl mx-auto px-4 pb-36">
+  <p id="subtitle" class="t-sub text-label2 -mt-1"></p>
+  <section id="storageBar" class="mt-3 empty:hidden"></section>
+
+  <!-- Summary tiles -->
+  <section id="stats" class="mt-4 grid grid-cols-2 lg:grid-cols-4 gap-3"></section>
+
+  <!-- Segmented + pop-up buttons -->
+  <div class="mt-6 flex flex-col sm:flex-row sm:items-center gap-3">
+    <div id="segmented" class="seg grid-cols-4 sm:w-[460px]"></div>
+    <div class="flex items-center gap-2 sm:ml-auto">
+      <select id="filterCategory" aria-label="หมวดหมู่"></select>
+      <select id="sortBy" aria-label="เรียงลำดับ">
+        <option value="expiry-asc" data-icon="sort-expiry" data-section="เรียงตาม">ใกล้หมดก่อน</option>
+        <option value="expiry-desc" data-icon="sort-late">หมดช้าสุดก่อน</option>
+        <option value="purchase-desc" data-icon="sort-purchase">ซื้อล่าสุด</option>
+        <option value="name-asc" data-icon="sort-name">ชื่อ</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- Lockup grid -->
+  <section id="list" class="mt-6 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-x-4 gap-y-7"></section>
+  <section id="empty" class="hidden mt-14 text-center px-6"></section>
+</main>
+
+<!-- Bottom toolbar: search field + prominent button (iOS 27 Toolbars – Bottom / Type=Search) -->
+<div class="edge-bottom fixed bottom-0 inset-x-0 z-30 pb-safe">
+  <div class="max-w-5xl mx-auto px-4 pt-2 flex items-center gap-3">
+    <div class="relative flex-1 h-12 rounded-full glass flex items-center">
+      <svg class="absolute left-4 h-[20px] w-[20px] text-label" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path stroke-linecap="round" d="M20 20l-4.8-4.8"/></svg>
+      <input id="search" type="search" placeholder="ค้นหาสินค้า แบรนด์ ซีเรียล" autocomplete="off"
+        class="w-full h-full pl-12 pr-11 bg-transparent outline-none placeholder:text-label3 rounded-full" />
+      <button id="searchClear" class="hidden absolute right-3 h-6 w-6 rounded-full grid place-items-center bg-[var(--label3)] text-[rgb(var(--card))]" aria-label="ล้างคำค้นหา">
+        <svg class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="3.2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M7 7l10 10M17 7L7 17"/></svg>
+      </button>
+    </div>
+    <button id="addBtn" class="gbtn gbtn-prominent !h-12 !w-12" aria-label="เพิ่มสินค้า">
+      <svg fill="none" stroke="currentColor" stroke-width="2.4" viewBox="0 0 24 24"><path stroke-linecap="round" d="M12 5v14M5 12h14"/></svg>
+    </button>
+  </div>
+</div>
+
+<!-- Form sheet -->
+<div id="formModal" class="hidden fixed inset-0 z-40">
+  <div class="backdrop absolute inset-0 bg-black/30" data-close></div>
+  <div class="relative h-full flex items-end sm:items-center justify-center p-2 pt-12 sm:p-6">
+    <form id="form" novalidate class="sheet w-full sm:max-w-[560px] h-full sm:h-auto sm:max-h-[88vh] flex flex-col bg-bg rounded-[38px] shadow-2xl overflow-hidden">
+      <div class="shrink-0 pt-2 flex justify-center"><span class="h-[5px] w-9 rounded-full bg-[var(--label3)]"></span></div>
+      <div id="formHead" class="edge-top shrink-0 z-10 px-4 pt-2 pb-2 grid grid-cols-[1fr_auto_1fr] items-center">
+        <button type="button" data-close class="gbtn glass justify-self-start" aria-label="ยกเลิก">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg>
+        </button>
+        <h2 id="formTitle" class="t-headline">สินค้าใหม่</h2>
+        <button type="submit" class="gbtn gbtn-prominent justify-self-end" aria-label="บันทึก">
+          <svg fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7"/></svg>
+        </button>
+      </div>
+      <div id="formScroll" class="overflow-y-auto px-4 pb-10">
+        <input type="hidden" name="id" />
+
+        <div class="group-list mt-3">
+          <label class="row" data-field="name"><span class="row-label">ชื่อสินค้า</span><input name="name" placeholder="จำเป็น" /></label>
+          <label class="row"><span class="row-label">แบรนด์</span><input name="brand" placeholder="เช่น Apple, Samsung" /></label>
+          <div class="row cursor-pointer"><span class="row-label flex-1 w-auto">หมวดหมู่</span>
+            <select name="category" aria-label="หมวดหมู่"></select>
+          </div>
+        </div>
+
+        <div class="section-header">การรับประกัน</div>
+        <div class="group-list">
+          <div class="row" data-field="purchaseDate"><span class="row-label flex-1 w-auto">วันที่ซื้อ</span>
+            <div class="relative pill-value">
+              <span id="purchaseDateText">—</span>
+              <input name="purchaseDate" type="date" class="!absolute inset-0 opacity-0 cursor-pointer" aria-label="วันที่ซื้อ" />
+            </div>
+          </div>
+          <div class="row !block py-3.5" data-field="duration" id="durationRow">
+            <div class="row-label w-auto">ระยะเวลารับประกัน</div>
+            <input type="hidden" name="duration" value="12" />
+            <div id="durationChips" class="mt-3 grid grid-cols-3 sm:grid-cols-6 gap-2" role="radiogroup" aria-label="ระยะเวลารับประกัน"></div>
+          </div>
+          <label class="row cursor-pointer select-none">
+            <input type="checkbox" name="customExpiry" class="ios-check" />
+            <span class="flex-1">กำหนดวันสิ้นสุดประกันเอง</span>
+          </label>
+          <div class="row hidden" data-field="expiryDate" id="customExpiryRow"><span class="row-label flex-1 w-auto">วันสิ้นสุดประกัน</span>
+            <div class="relative pill-value">
+              <span id="expiryDateText">เลือกวันที่</span>
+              <input name="expiryDate" type="date" class="!absolute inset-0 opacity-0 cursor-pointer" aria-label="วันสิ้นสุดประกัน" />
+            </div>
+          </div>
+          <div class="row"><span class="row-label flex-1 w-auto">หมดประกัน</span>
+            <span id="expiryPreview" class="detail flex items-center gap-2">—</span>
+          </div>
+        </div>
+        <div class="section-footer" id="expiryFooter">วันหมดประกันคำนวณจากวันที่ซื้อและระยะเวลาที่เลือกโดยอัตโนมัติ</div>
+
+        <div class="section-header">การซื้อ</div>
+        <div class="group-list">
+          <label class="row"><span class="row-label">ชื่อร้านค้า</span><input name="store" placeholder="เช่น Power Buy, Shopee" /></label>
+          <label class="row" data-field="price"><span class="row-label">ราคา</span>
+            <input name="price" type="text" inputmode="decimal" autocomplete="off" placeholder="0.00" class="text-right tabular-nums" />
+            <span class="detail shrink-0">บาท</span>
+          </label>
+        </div>
+
+        <div class="section-header">ใบเสร็จ</div>
+        <div class="group-list">
+          <div id="receiptPreviewRow" class="row hidden py-3"><div id="receiptPreview" class="grid grid-cols-4 gap-2 w-full"></div></div>
+          <label class="row cursor-pointer text-sblue active:bg-black/5">
+            <svg class="h-[22px] w-[22px]" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6M9 12h6"/></svg>
+            แนบใบเสร็จ…
+            <span class="ml-auto t-foot text-label2">รูปภาพ หรือ PDF</span>
+            <input id="receiptFile" type="file" accept="image/*,application/pdf" multiple class="hidden" />
+          </label>
+          <label class="row" data-field="receiptUrl">
+            <svg class="h-[22px] w-[22px] text-sblue shrink-0" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M10 14a4 4 0 005.7 0l3-3a4 4 0 00-5.7-5.7l-1 1M14 10a4 4 0 00-5.7 0l-3 3a4 4 0 005.7 5.7l1-1"/></svg>
+            <input name="receiptUrl" type="url" inputmode="url" placeholder="ลิงก์ใบเสร็จออนไลน์ (ถ้ามี)" />
+          </label>
+        </div>
+
+        <div class="section-header">หมายเหตุ</div>
+        <div class="group-list">
+          <label class="row !items-start py-3.5"><textarea name="notes" rows="3" class="resize-none" placeholder="เช่น เบอร์ศูนย์บริการ, เงื่อนไขการเคลม"></textarea></label>
+        </div>
+
+        <div class="section-header">รูปภาพ</div>
+        <div class="group-list">
+          <div id="imgPreviewRow" class="row hidden py-3"><div id="imgPreview" class="grid grid-cols-4 gap-2 w-full"></div></div>
+          <label class="row cursor-pointer text-sblue active:bg-black/5">
+            <svg class="h-[22px] w-[22px]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3"/><circle cx="9" cy="10" r="1.6"/><path d="M21 15l-5-5-8 9"/></svg>
+            แนบไฟล์รูป…
+            <input id="imgFile" type="file" accept="image/*" multiple class="hidden" />
+          </label>
+        </div>
+        <div class="section-footer">รูปและใบเสร็จที่เป็นรูปภาพจะถูกย่อขนาดอัตโนมัติ · PDF ขนาดไม่เกิน 5 MB</div>
+        <div id="formDeleteWrap" class="group-list mt-8 hidden">
+          <button type="button" id="formDelete" class="row w-full justify-center text-sred active:bg-black/5">ลบสินค้า</button>
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Detail sheet -->
+<div id="detailModal" class="hidden fixed inset-0 z-40">
+  <div class="backdrop absolute inset-0 bg-black/30" data-close></div>
+  <div class="relative h-full flex items-end sm:items-center justify-center p-2 pt-12 sm:p-6">
+    <div id="detailBody" class="sheet w-full sm:max-w-[560px] h-full sm:h-auto sm:max-h-[88vh] flex flex-col bg-bg rounded-[38px] shadow-2xl overflow-hidden"></div>
+  </div>
+</div>
+
+<!-- Alert (iOS 27) -->
+<div id="confirmModal" class="hidden fixed inset-0 z-50">
+  <div class="backdrop absolute inset-0 bg-black/25" data-close></div>
+  <div class="relative h-full flex items-center justify-center p-6">
+    <div class="alert-in w-[300px] rounded-[34px] glass-strong p-[18px] pt-5">
+      <h3 id="confirmTitle" class="t-headline px-1"></h3>
+      <p id="confirmText" class="mt-1.5 t-sub px-1"></p>
+      <div class="mt-5 grid grid-cols-2 gap-3">
+        <button data-close class="h-12 rounded-full fill t-headline active:opacity-60">ยกเลิก</button>
+        <button id="confirmOk" class="h-12 rounded-full bg-sred text-white t-headline active:opacity-80">ลบ</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Lightbox -->
+<div id="lightbox" class="hidden fixed inset-0 z-[60] bg-black flex items-center justify-center p-4 cursor-zoom-out fade-in">
+  <img id="lightboxImg" class="max-h-full max-w-full rounded-[20px]" alt="" />
+</div>
+
+<!-- Toast -->
+<div id="toast" class="hidden fixed top-3 left-1/2 -translate-x-1/2 z-[70] px-5 h-12 rounded-full glass-strong t-sub font-medium max-w-[92vw] flex items-center gap-2 whitespace-nowrap"></div>
+
+<style type="text/tailwindcss">
+  .menu-row { @apply flex items-center gap-3 mx-2 px-3 h-10 rounded-[14px] text-left outline-none; width: calc(100% - 16px); }
+  .menu-row:hover, .menu-row:focus-visible { background: var(--fill); }
+  .menu-row:active { background: var(--fill); transform: scale(.98); }
+  .menu-row svg { @apply h-5 w-5 shrink-0; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+</style>
+
+<script>
+(() => {
+  'use strict';
+
+  // ---------- Config ----------
+  const STORAGE_KEY = 'wt-items-v1';
+  const SOON_DAYS = 30;
+  const ICONS = {
+    electronics: '<rect x="7" y="2.5" width="10" height="19" rx="2.6"/><path d="M11 18.5h2"/>',
+    appliance: '<path d="M13 2.5L5.5 13.5H12l-1 8 7.5-11H12z"/>',
+    computer: '<rect x="4" y="5" width="16" height="11" rx="1.6"/><path d="M2 19.5h20"/>',
+    automotive: '<path d="M4 15.5v-4l2.2-5.5h11.6l2.2 5.5v4a1 1 0 01-1 1H5a1 1 0 01-1-1z"/><path d="M4 11.5h16M6 16.5V19M18 16.5V19"/><circle cx="8" cy="14" r=".6"/><circle cx="16" cy="14" r=".6"/>',
+    furniture: '<path d="M5 11V8a2 2 0 012-2h10a2 2 0 012 2v3"/><path d="M3 12a2 2 0 014 0v2h10v-2a2 2 0 014 0v5H3z"/><path d="M5 17v2M19 17v2"/>',
+    tools: '<path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94z"/>',
+    fashion: '<circle cx="12" cy="12" r="5.5"/><path d="M12 9.5V12l1.6 1.4M9 6.8L9.6 3h4.8l.6 3.8M9 17.2l.6 3.8h4.8l.6-3.8"/>',
+    other: '<path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8M12 13v8"/>',
+  };
+  // ไล่สีจาก Accents ของ iOS 27 UI Kit
+  const CATEGORIES = [
+    { id: 'electronics', label: 'อิเล็กทรอนิกส์', g: ['#3CD3FE', '#0088FF'] },
+    { id: 'appliance',   label: 'เครื่องใช้ไฟฟ้า', g: ['#FFCC00', '#FF8D28'] },
+    { id: 'computer',    label: 'คอมพิวเตอร์/ไอที', g: ['#CB30E0', '#6155F5'] },
+    { id: 'automotive',  label: 'ยานยนต์', g: ['#00DAC3', '#00A6B4'] },
+    { id: 'furniture',   label: 'เฟอร์นิเจอร์', g: ['#C9A27E', '#AC7F5E'] },
+    { id: 'tools',       label: 'เครื่องมือช่าง', g: ['#AEAEB2', '#636366'] },
+    { id: 'fashion',     label: 'นาฬิกา/แฟชั่น', g: ['#FF6B8A', '#FF2D55'] },
+    { id: 'other',       label: 'อื่นๆ', g: ['#C7C7CC', '#8E8E93'] },
+  ];
+  const STATUS = {
+    active:   { label: 'คุ้มครอง', long: 'กำลังคุ้มครอง', text: 'text-sgreen', bg: 'bg-sgreen', tint: 'bg-sgreen/15' },
+    expiring: { label: 'ใกล้หมด', long: 'ใกล้หมดประกัน', text: 'text-sorange', bg: 'bg-sorange', tint: 'bg-sorange/15' },
+    expired:  { label: 'หมดแล้ว', long: 'หมดประกันแล้ว', text: 'text-sred', bg: 'bg-sred', tint: 'bg-sred/15' },
+  };
+
+  // ---------- State ----------
+  let items = []; // โหลดจาก IndexedDB ตอนเริ่มแอป (ดู loadData)
+  let ui = { q: '', category: 'all', status: 'all', sort: 'expiry-asc' };
+  let formImages = [];
+  let formReceipts = []; // [{ name, type, data }]
+  let detailId = null;
+
+  // ---------- Helpers ----------
+  const $ = (s, el = document) => el.querySelector(s);
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  const catOf = (id) => CATEGORIES.find(c => c.id === id) || CATEGORIES[CATEGORIES.length - 1];
+  const isSafeUrl = (u) => /^https?:\/\//i.test(u || '') || /^data:image\//i.test(u || '');
+  const icon = (id, cls = 'h-6 w-6') => `<svg class="${cls}" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">${ICONS[id] || ICONS.other}</svg>`;
+  const grad = (c) => `background:linear-gradient(160deg,${c.g[0]},${c.g[1]})`;
+  const CHEV = '<svg class="chev" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>';
+
+  function parseDate(str) { const [y, m, d] = str.split('-').map(Number); return new Date(y, m - 1, d); }
+  function toISO(d) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
+  function today() { const d = new Date(); d.setHours(0, 0, 0, 0); return d; }
+
+  // จำนวนเดือนเต็มระหว่างสองวัน (ใช้กับวันสิ้นสุดที่กำหนดเอง)
+  function monthsBetween(a, b) {
+    const s = parseDate(a), e = parseDate(b);
+    let m = (e.getFullYear() - s.getFullYear()) * 12 + e.getMonth() - s.getMonth();
+    if (e.getDate() < s.getDate()) m--;
+    return Math.max(0, m);
+  }
+  const isSafeReceipt = (r) => r && typeof r.data === 'string' && /^data:(image\/|application\/pdf)/i.test(r.data);
+  function calcExpiry(purchaseDate, duration, unit) {
+    if (!purchaseDate || !(duration > 0)) return null;
+    const start = parseDate(purchaseDate);
+    const months = unit === 'years' ? duration * 12 : duration;
+    const end = new Date(start.getFullYear(), start.getMonth() + months, 1);
+    const lastDay = new Date(end.getFullYear(), end.getMonth() + 1, 0).getDate();
+    end.setDate(Math.min(start.getDate(), lastDay));
+    return toISO(end);
+  }
+  const daysLeft = (expiry) => Math.round((parseDate(expiry) - today()) / 86400000);
+  function statusOf(item) {
+    const d = daysLeft(item.expiryDate);
+    return d < 0 ? 'expired' : d <= SOON_DAYS ? 'expiring' : 'active';
+  }
+  const fmtDate = (iso) => iso ? parseDate(iso).toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+  const fmtDuration = (n, unit) => `${n} ${unit === 'years' ? 'ปี' : 'เดือน'}`;
+  function fmtLeft(d) {
+    if (d < 0) {
+      const a = -d;
+      return a >= 365 ? `หมดมาแล้ว ${Math.floor(a / 365)} ปี` : a >= 30 ? `หมดมาแล้ว ${Math.floor(a / 30)} เดือน` : `หมดมาแล้ว ${a} วัน`;
+    }
+    if (d === 0) return 'หมดวันนี้';
+    if (d >= 365) { const m = Math.floor((d % 365) / 30); return `เหลือ ${Math.floor(d / 365)} ปี${m ? ` ${m} เดือน` : ''}`; }
+    if (d >= 60) return `เหลือ ${Math.floor(d / 30)} เดือน`;
+    return `เหลือ ${d} วัน`;
+  }
+  function progress(item) {
+    const s = parseDate(item.purchaseDate), e = parseDate(item.expiryDate), total = e - s;
+    return total <= 0 ? 100 : Math.max(0, Math.min(100, ((today() - s) / total) * 100));
+  }
+
+  // ---------- Storage ----------
+  // ข้อมูลหลักเก็บเป็นไฟล์ .json ในเครื่อง (File System Access API — Chrome/Edge)
+  // LocalStorage ใช้เป็นสำเนาสำรอง และใช้แทนเมื่อยังไม่ได้เชื่อมไฟล์หรือเบราว์เซอร์ไม่รองรับ
+  const FS_SUPPORTED = 'showSaveFilePicker' in window && 'indexedDB' in window;
+  let fileHandle = null;   // FileSystemFileHandle
+  let fileState = 'none';  // none | granted | prompt
+  let syncState = 'idle';  // idle | saving | saved | error
+  let writeChain = Promise.resolve();
+  let savedAt = 0;
+  let lastModified = 0;    // lastModified ของไฟล์ที่แอปอ่าน/เขียนล่าสุด — ถ้าไม่ตรงแปลว่าเครื่องอื่นแก้ไฟล์ (ผ่าน OneDrive/Drive)
+  let tombstones = {};     // { id: เวลาที่ลบ } — เพื่อให้การลบซิงก์ไปเครื่องอื่นด้วย
+  try { savedAt = Number(localStorage.getItem('wt-saved-at')) || 0; } catch (e) {}
+  try { tombstones = JSON.parse(localStorage.getItem('wt-deleted')) || {}; } catch (e) {}
+
+  // ---------- ที่เก็บข้อมูลในเบราว์เซอร์: IndexedDB (ไม่ติดเพดาน ~5 MB ของ LocalStorage) ----------
+  // แต่ละสินค้าเก็บเป็น 1 record และเขียนเฉพาะรายการที่เปลี่ยน — บันทึกเร็วแม้มีรูป/ใบเสร็จเยอะ
+  let dataDbPromise = null, dbBroken = false, dbChain = Promise.resolve();
+  let savedRefs = new WeakSet(), savedIds = new Set();
+  function dataDb() {
+    return dataDbPromise || (dataDbPromise = new Promise((res, rej) => {
+      const r = indexedDB.open('wt-data', 1);
+      r.onupgradeneeded = () => r.result.createObjectStore('items', { keyPath: 'id' });
+      r.onsuccess = () => res(r.result);
+      r.onerror = () => rej(r.error);
+      r.onblocked = () => rej(new Error('blocked'));
+    }));
+  }
+  async function dbLoadItems() {
+    const db = await dataDb();
+    return new Promise((res, rej) => {
+      const q = db.transaction('items').objectStore('items').getAll();
+      q.onsuccess = () => res(q.result || []); q.onerror = () => rej(q.error);
+    });
+  }
+  function persistItems() {
+    const snapshot = items.slice();
+    dbChain = dbChain.then(async () => {
+      const db = await dataDb();
+      await new Promise((res, rej) => {
+        const t = db.transaction('items', 'readwrite'), s = t.objectStore('items'), ids = new Set();
+        for (const it of snapshot) { ids.add(it.id); if (!savedRefs.has(it)) s.put(it); }
+        for (const id of savedIds) if (!ids.has(id)) s.delete(id);
+        t.oncomplete = () => { snapshot.forEach(it => savedRefs.add(it)); savedIds = ids; res(); };
+        t.onerror = t.onabort = () => rej(t.error);
+      });
+      return true;
+    }).catch((err) => {
+      console.error(err);
+      toast(err && err.name === 'QuotaExceededError' ? 'พื้นที่ในเครื่องเต็ม — ลองลบรูปที่ไม่ใช้ หรือเพิ่มพื้นที่ว่างในเครื่อง' : 'บันทึกข้อมูลไม่สำเร็จ', 4500);
+      return false;
+    });
+    return dbChain;
+  }
+  function load() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || []; } catch (e) { return []; } } // ข้อมูลเก่าใน LocalStorage
+  function saveLocal() {
+    try {
+      localStorage.setItem('wt-deleted', JSON.stringify(tombstones));
+      localStorage.setItem('wt-saved-at', String(savedAt));
+    } catch (e) {}
+    if (!dbBroken) { persistItems(); return true; }
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(items)); return true; } catch (e) { return false; } // สำรองกรณีเบราว์เซอร์ปิด IndexedDB
+  }
+  async function loadData() {
+    try {
+      const stored = await dbLoadItems();
+      const legacy = load();
+      if (!stored.length && legacy.length) {
+        // ย้ายข้อมูลเดิมจาก LocalStorage มา IndexedDB ครั้งเดียว
+        items = legacy;
+        if (await persistItems()) { try { localStorage.removeItem(STORAGE_KEY); } catch (e) {} }
+      } else {
+        items = stored;
+        stored.forEach(it => savedRefs.add(it));
+        savedIds = new Set(stored.map(i => i.id));
+      }
+    } catch (e) {
+      console.error(e);
+      dbBroken = true;
+      items = load();
+    }
+    // ขอให้เบราว์เซอร์เก็บข้อมูลแบบถาวร (ไม่ลบเองเมื่อเครื่องใกล้เต็ม)
+    try { if (navigator.storage && navigator.storage.persist) await navigator.storage.persist(); } catch (e) {}
+  }
+  function markDeleted(ids) { const t = Date.now(); ids.forEach(id => { tombstones[id] = t; }); }
+
+  // ---------- รวมข้อมูลจากหลายเครื่อง ----------
+  // รายการเดียวกัน (id เดียวกัน) ใช้ฉบับที่แก้ล่าสุด, รายการที่ถูกลบหลังการแก้ครั้งล่าสุดจะถูกตัดออก
+  const stamp = (it) => it.updatedAt || it.createdAt || 0;
+  const signature = (arr) => arr.map(i => `${i.id}:${stamp(i)}`).sort().join('|');
+  function mergeData(localItems, remoteItems, localDel, remoteDel) {
+    const deleted = { ...localDel };
+    for (const [id, t] of Object.entries(remoteDel || {})) deleted[id] = Math.max(deleted[id] || 0, t);
+    const byId = new Map();
+    for (const it of [...localItems, ...remoteItems]) {
+      const cur = byId.get(it.id);
+      if (!cur || stamp(it) > stamp(cur)) byId.set(it.id, it);
+    }
+    const cutoff = Date.now() - 180 * 86400000; // เก็บประวัติการลบไว้ 180 วัน
+    for (const id of Object.keys(deleted)) if (deleted[id] < cutoff) delete deleted[id];
+    return { items: [...byId.values()].filter(it => !(deleted[it.id] >= stamp(it))), deleted };
+  }
+  function save() {
+    savedAt = Date.now();
+    const okLocal = saveLocal();
+    if (fileState === 'granted') { writeFile(); return true; }
+    if (!okLocal) {
+      toast('พื้นที่จัดเก็บเต็ม — ลองลดจำนวนรูปภาพ', 4500);
+      return false;
+    }
+    return true;
+  }
+
+  // IndexedDB เก็บ "ตัวชี้ไฟล์" ไว้ เพื่อให้เปิดหน้าครั้งต่อไปแล้วใช้ไฟล์เดิมได้
+  function idb() {
+    return new Promise((res, rej) => {
+      const r = indexedDB.open('wt-fs', 1);
+      r.onupgradeneeded = () => r.result.createObjectStore('h');
+      r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error);
+    });
+  }
+  async function idbGet(k) {
+    const db = await idb();
+    return new Promise((res, rej) => { const q = db.transaction('h').objectStore('h').get(k); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); });
+  }
+  async function idbSet(k, v) {
+    const db = await idb();
+    return new Promise((res, rej) => {
+      const t = db.transaction('h', 'readwrite'), s = t.objectStore('h');
+      v === undefined ? s.delete(k) : s.put(v, k);
+      t.oncomplete = res; t.onerror = () => rej(t.error);
+    });
+  }
+
+  function normalizeItems(arr) {
+    const isoDate = (s) => typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s);
+    return arr.filter(x => x && x.name && isoDate(x.purchaseDate) && (x.duration || (x.customExpiry && isoDate(x.expiryDate)))).map(x => {
+      const unit = x.unit === 'months' ? 'months' : 'years';
+      const custom = !!x.customExpiry && isoDate(x.expiryDate);
+      const price = x.price == null || x.price === '' ? null : Number(x.price);
+      return {
+        ...x, id: x.id || uid(), unit, customExpiry: custom,
+        images: Array.isArray(x.images) ? x.images.filter(isSafeUrl) : [],
+        receipts: Array.isArray(x.receipts) ? x.receipts.filter(isSafeReceipt) : [],
+        price: Number.isFinite(price) && price >= 0 ? price : null,
+        expiryDate: custom ? x.expiryDate : calcExpiry(x.purchaseDate, Number(x.duration), unit),
+      };
+    });
+  }
+  const serialize = () => JSON.stringify({ app: 'warranty-tracker', version: 2, savedAt, items, deleted: tombstones }, null, 2);
+
+  function setSync(s) { syncState = s; renderStorage(); }
+  function parseData(text) {
+    if (!text.trim()) return null;
+    const json = JSON.parse(text);
+    const arr = Array.isArray(json) ? json : json.items;
+    if (!Array.isArray(arr)) throw new Error('bad format');
+    const deleted = json && typeof json.deleted === 'object' && !Array.isArray(json.deleted) ? json.deleted : {};
+    return { items: normalizeItems(arr), deleted, savedAt: Number(json.savedAt) || 0 };
+  }
+  async function readFile(h) {
+    const file = await h.getFile();
+    const data = parseData(await file.text());
+    return data && { ...data, lastModified: file.lastModified };
+  }
+  // รวมข้อมูลจากไฟล์ (ที่เครื่องอื่นอาจแก้) เข้ากับข้อมูลในแอป — คืนค่า true ถ้าข้อมูลในแอปเปลี่ยน
+  function absorb(remote) {
+    const before = signature(items);
+    const m = mergeData(items, remote.items, tombstones, remote.deleted);
+    items = m.items; tombstones = m.deleted;
+    const changed = signature(items) !== before;
+    if (changed) { savedAt = Date.now(); saveLocal(); render(); }
+    return { changed, needsWrite: signature(items) !== signature(remote.items) || Object.keys(tombstones).length !== Object.keys(remote.deleted).length };
+  }
+
+  // ทุกการอ่าน/เขียนไฟล์ทำต่อกันเป็นคิว เพื่อไม่ให้ชนกัน
+  function queue(job) {
+    const h = fileHandle;
+    writeChain = writeChain.then(() => (h === fileHandle && fileState === 'granted') ? job(h) : null).catch((err) => {
+      console.error(err);
+      if (h !== fileHandle) return;
+      fileState = 'prompt';
+      setSync('error');
+      toast('บันทึกลงไฟล์ไม่สำเร็จ — ข้อมูลยังอยู่ในเบราว์เซอร์', 4000);
+    });
+    return writeChain;
+  }
+  async function writeNow(h) {
+    // ถ้าไฟล์ถูกแก้จากเครื่องอื่นตั้งแต่ที่อ่านล่าสุด ให้รวมข้อมูลก่อนเขียนทับ
+    const f = await h.getFile();
+    if (lastModified && f.lastModified !== lastModified) {
+      try { const remote = parseData(await f.text()); if (remote && absorb(remote).changed) toast('รวมข้อมูลจากเครื่องอื่นแล้ว'); } catch (e) {}
+    }
+    const w = await h.createWritable();
+    await w.write(serialize());
+    await w.close();
+    lastModified = (await h.getFile()).lastModified;
+    if (h === fileHandle) setSync('saved');
+  }
+  function writeFile() { setSync('saving'); queue(writeNow); }
+
+  // ตรวจไฟล์เป็นระยะ: ถ้า OneDrive/Drive ดึงไฟล์เวอร์ชันใหม่จากเครื่องอื่นมา ให้โหลดเข้าแอปทันที
+  function checkRemote() {
+    if (fileState !== 'granted' || syncState === 'saving' || document.hidden) return;
+    queue(async (h) => {
+      let f;
+      try { f = await h.getFile(); } catch (e) { return; } // ไฟล์อาจถูกล็อกชั่วคราวระหว่างซิงก์
+      if (f.lastModified === lastModified) return;
+      let remote;
+      try { remote = parseData(await f.text()); } catch (e) { return; } // ไฟล์อาจซิงก์มายังไม่ครบ ลองใหม่รอบหน้า
+      lastModified = f.lastModified;
+      if (!remote) return;
+      const r = absorb(remote);
+      if (r.changed) toast('อัปเดตข้อมูลจากเครื่องอื่นแล้ว');
+      if (r.needsWrite) await writeNow(h); else setSync('saved');
+    });
+  }
+  setInterval(checkRemote, 5000);
+  document.addEventListener('visibilitychange', checkRemote);
+  window.addEventListener('focus', checkRemote);
+
+  // mode: 'new' = ไฟล์ใหม่, 'open' = เปิดไฟล์ที่มี, 'restore' = เปิดหน้าเว็บใหม่ — ทุกกรณีรวมข้อมูลทั้งสองฝั่ง
+  async function attach(h, mode) {
+    let remote = null;
+    if (mode !== 'new') {
+      try { remote = await readFile(h); }
+      catch (e) { toast('ไฟล์นี้ไม่ใช่ไฟล์ข้อมูลของแอป หรือไฟล์เสียหาย', 4000); if (mode === 'open') return; }
+    }
+    fileHandle = h; fileState = 'granted';
+    try { await idbSet('data', h); } catch (e) {}
+    if (remote) {
+      lastModified = remote.lastModified;
+      const r = absorb(remote);
+      saveLocal();
+      if (r.needsWrite) writeFile(); else setSync('saved');
+    } else {
+      lastModified = 0;
+      save(); // ไฟล์ใหม่หรือไฟล์ว่าง → เขียนข้อมูลปัจจุบันลงไฟล์
+    }
+    render();
+  }
+
+  async function initFile() {
+    if (!FS_SUPPORTED) return renderStorage();
+    let h = null;
+    try { h = await idbGet('data'); } catch (e) {}
+    if (!h) return renderStorage();
+    fileHandle = h;
+    let p = 'prompt';
+    try { p = await h.queryPermission({ mode: 'readwrite' }); } catch (e) {}
+    if (p === 'granted') await attach(h, 'restore');
+    else { fileState = 'prompt'; renderStorage(); }
+  }
+  async function reconnectFile() {
+    try {
+      const p = await fileHandle.requestPermission({ mode: 'readwrite' });
+      if (p !== 'granted') return toast('ไม่ได้รับอนุญาตให้เข้าถึงไฟล์');
+      await attach(fileHandle, 'restore');
+      toast('เชื่อมต่อไฟล์ข้อมูลแล้ว');
+    } catch (e) { toast('ไม่พบไฟล์เดิม — กรุณาเลือกไฟล์ใหม่', 4000); }
+  }
+  const PICKER_TYPES = [{ description: 'ไฟล์ข้อมูลการรับประกัน', accept: { 'application/json': ['.json'] } }];
+  async function createFile() {
+    try {
+      const h = await window.showSaveFilePicker({ suggestedName: 'warranty-data.json', types: PICKER_TYPES });
+      await attach(h, 'new');
+      toast('สร้างไฟล์ข้อมูลแล้ว');
+    } catch (e) { if (e.name !== 'AbortError') toast('สร้างไฟล์ไม่สำเร็จ'); }
+  }
+  async function openFile() {
+    try {
+      const [h] = await window.showOpenFilePicker({ types: PICKER_TYPES, multiple: false });
+      if ((await h.requestPermission({ mode: 'readwrite' })) !== 'granted') return toast('ต้องอนุญาตให้แก้ไขไฟล์เพื่อบันทึกข้อมูล');
+      await attach(h, 'open');
+      if (fileHandle === h) toast('เปิดไฟล์ข้อมูลแล้ว');
+    } catch (e) { if (e.name !== 'AbortError') toast('เปิดไฟล์ไม่สำเร็จ'); }
+  }
+  async function disconnectFile() {
+    try { await idbSet('data', undefined); } catch (e) {}
+    fileHandle = null; fileState = 'none'; syncState = 'idle';
+    try { localStorage.removeItem('wt-fs-later'); } catch (e) {}
+    if (!saveLocal()) toast('พื้นที่เบราว์เซอร์เต็ม — ข้อมูลบางส่วนอาจไม่ถูกเก็บ', 4000);
+    renderStorage();
+    toast('หยุดใช้ไฟล์แล้ว — ข้อมูลจะเก็บในเบราว์เซอร์');
+  }
+  window.addEventListener('beforeunload', (e) => { if (syncState === 'saving') { e.preventDefault(); e.returnValue = ''; } });
+
+  // ---------- Storage UI ----------
+  const DOC_ICON = '<svg class="h-[18px] w-[18px] shrink-0" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8z"/><path d="M14 3v5h5"/></svg>';
+  function renderStorage() {
+    const bar = $('#storageBar');
+    let later = false;
+    try { later = localStorage.getItem('wt-fs-later') === '1'; } catch (e) {}
+    const name = esc(fileHandle?.name || 'warranty-data.json');
+
+    if (fileState === 'granted') {
+      const st = { saving: ['กำลังบันทึก…', 'text-label2'], error: ['บันทึกไม่สำเร็จ', 'text-sred'] }[syncState] || ['บันทึกแล้ว', 'text-sgreen'];
+      bar.innerHTML = `<div class="inline-flex items-center gap-2 h-9 pl-3 pr-4 rounded-full glass t-foot max-w-full" title="แอปตรวจไฟล์ทุก 5 วินาที ถ้าไฟล์ถูกแก้จากเครื่องอื่น (เช่นผ่าน OneDrive / Google Drive) จะโหลดและรวมข้อมูลให้อัตโนมัติ">
+        <span class="text-sblue">${DOC_ICON}</span><span class="font-medium truncate">${name}</span>
+        <span class="${st[1]} shrink-0">· ${st[0]}</span></div>`;
+    } else if (fileState === 'prompt') {
+      bar.innerHTML = `<div class="group-list p-4 flex items-center gap-3">
+        <span class="h-10 w-10 rounded-full bg-sorange/15 text-sorange grid place-items-center shrink-0">${DOC_ICON}</span>
+        <div class="flex-1 min-w-0"><div class="t-headline !text-[15px]">อนุญาตให้เข้าถึงไฟล์ข้อมูล</div>
+          <div class="t-foot text-label2 truncate">${name} · ตอนนี้บันทึกในเบราว์เซอร์ชั่วคราว</div></div>
+        <button data-fs="reconnect" class="gbtn gbtn-prominent gbtn-text !h-9 t-sub font-semibold shrink-0">อนุญาต</button></div>`;
+    } else if (FS_SUPPORTED && !later) {
+      bar.innerHTML = `<div class="group-list p-4">
+        <div class="flex gap-3">
+          <span class="h-10 w-10 rounded-full bg-sblue/15 text-sblue grid place-items-center shrink-0">${DOC_ICON}</span>
+          <div class="min-w-0"><div class="t-headline !text-[15px]">เก็บข้อมูลเป็นไฟล์ · ใช้ได้หลายเครื่อง</div>
+            <div class="t-foot text-label2 mt-0.5">ตอนนี้ข้อมูลอยู่ในเบราว์เซอร์ สร้างไฟล์ .json ไว้ในเครื่อง เพื่อให้ข้อมูลไม่หาย สำรองง่าย และแนบรูปได้ไม่จำกัด</div>
+            <div class="t-foot mt-1.5 text-sblue">เคล็ดลับ: บันทึกไฟล์ไว้ในโฟลเดอร์ OneDrive หรือ Google Drive แล้วเปิดไฟล์เดียวกันจากคอมเครื่องอื่น ข้อมูลจะซิงก์ให้อัตโนมัติ</div></div>
+        </div>
+        <div class="mt-3 flex flex-wrap gap-2 sm:pl-[52px]">
+          <button data-fs="create" class="gbtn gbtn-prominent gbtn-text !h-9 t-sub font-semibold">สร้างไฟล์ข้อมูล</button>
+          <button data-fs="open" class="gbtn gbtn-text !h-9 t-sub fill">เปิดไฟล์ที่มี</button>
+          <button data-fs="later" class="gbtn gbtn-text !h-9 t-sub text-label2">ไว้ทีหลัง</button>
+        </div></div>`;
+    } else if (!FS_SUPPORTED) {
+      bar.innerHTML = `<p class="t-foot text-label2">ข้อมูลเก็บในเบราว์เซอร์ · เปิดด้วย Chrome หรือ Edge เพื่อบันทึกเป็นไฟล์ในเครื่อง</p>`;
+    } else {
+      bar.innerHTML = '';
+    }
+
+    $('#menuFile').innerHTML = !FS_SUPPORTED ? '' : `
+      <button data-fs="create" class="menu-row"><svg viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8z"/><path d="M14 3v5h5M12 11v6M9 14h6"/></svg>สร้างไฟล์ข้อมูลใหม่…</button>
+      <button data-fs="open" class="menu-row"><svg viewBox="0 0 24 24"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"/></svg>เปิดไฟล์ข้อมูล…</button>
+      ${fileHandle ? `<button data-fs="disconnect" class="menu-row"><svg viewBox="0 0 24 24"><path d="M10 14a4 4 0 005.7 0l3-3a4 4 0 00-5.7-5.7l-1 1M14 10a4 4 0 00-5.7 0l-3 3a4 4 0 005.7 5.7l1-1M4 4l16 16"/></svg>หยุดใช้ไฟล์</button>` : ''}
+      <div class="menu-sep"></div>`;
+  }
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest('[data-fs]')?.dataset.fs;
+    if (!a) return;
+    $('#menu').classList.add('hidden');
+    if (a === 'create') createFile();
+    if (a === 'open') openFile();
+    if (a === 'reconnect') reconnectFile();
+    if (a === 'disconnect') disconnectFile();
+    if (a === 'later') { try { localStorage.setItem('wt-fs-later', '1'); } catch (_) {} renderStorage(); }
+  });
+
+  // ---------- Toast ----------
+  let toastTimer;
+  function toast(msg, ms = 2200) {
+    const el = $('#toast');
+    el.textContent = msg;
+    el.classList.remove('hidden', 'toast-in');
+    void el.offsetWidth;
+    el.classList.add('toast-in');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.add('hidden'), ms);
+  }
+
+  // ---------- Modals ----------
+  const MODALS = ['#formModal', '#detailModal', '#confirmModal'];
+  function openModal(id) { $(id).classList.remove('hidden'); document.body.style.overflow = 'hidden'; }
+  function closeModal(id) {
+    $(id).classList.add('hidden');
+    if (!MODALS.some(m => !$(m).classList.contains('hidden'))) document.body.style.overflow = '';
+  }
+  MODALS.forEach(id => $(id).addEventListener('click', (e) => { if (e.target.closest('[data-close]')) closeModal(id); }));
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Escape') return;
+    if (openMenu) { const b = openMenu.btn; closePopup(); return b.focus(); }
+    if (!$('#lightbox').classList.contains('hidden')) return $('#lightbox').classList.add('hidden');
+    for (const id of [...MODALS].reverse()) if (!$(id).classList.contains('hidden')) return closeModal(id);
+  });
+
+  let confirmCb = null;
+  function confirmDialog(title, text, okLabel, cb) {
+    $('#confirmTitle').textContent = title;
+    $('#confirmText').textContent = text;
+    $('#confirmOk').textContent = okLabel;
+    confirmCb = cb;
+    openModal('#confirmModal');
+  }
+  $('#confirmOk').addEventListener('click', () => { closeModal('#confirmModal'); confirmCb && confirmCb(); });
+
+  function openLightbox(src) { $('#lightboxImg').src = src; $('#lightbox').classList.remove('hidden'); }
+  $('#lightbox').addEventListener('click', () => $('#lightbox').classList.add('hidden'));
+
+  // ---------- Liquid Glass: หักเหแสงจริงด้วย SVG displacement (Chrome / Edge) ----------
+  // ค่าจาก Figma iOS 27 UI Kit → Liquid Glass: Frost 6, Refraction 70, Depth 30, Dispersion 20, Opacity 25
+  const LiquidGlass = (() => {
+    const NS = 'http://www.w3.org/2000/svg';
+    const supported = /Chrome\/\d+/.test(navigator.userAgent) && typeof ResizeObserver !== 'undefined';
+    const reduced = window.matchMedia('(prefers-reduced-transparency: reduce)').matches;
+    const MODE = { clear: { blur: 1.2, refr: 1 }, regular: { blur: 3, refr: 1 }, strong: { blur: 9, refr: .7 } };
+    const REFRACTION = 70, DEPTH = .3, DISPERSION = .2;
+    const cache = new Map(), els = new Set();
+    let enabled = false, defs = null, ro = null;
+
+    // signed distance ไปยังขอบสี่เหลี่ยมมุมโค้ง (ค่าลบ = อยู่ด้านใน)
+    function sdf(x, y, hw, hh, r) {
+      const qx = Math.abs(x) - hw + r, qy = Math.abs(y) - hh + r;
+      return Math.hypot(Math.max(qx, 0), Math.max(qy, 0)) + Math.min(Math.max(qx, qy), 0) - r;
+    }
+    // displacement map: ช่วงขอบ (bezel) ดึงภาพจากด้านในออกมา เหมือนเลนส์โค้งที่ขอบกระจก
+    function mapURL(w, h, r, bezel) {
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      const ctx = c.getContext('2d'), img = ctx.createImageData(w, h), d = img.data, hw = w / 2, hh = h / 2;
+      for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+        const px = x + .5 - hw, py = y + .5 - hh, dist = -sdf(px, py, hw, hh, r);
+        let dx = 0, dy = 0;
+        if (dist > 0 && dist < bezel) {
+          const nx = sdf(px + .5, py, hw, hh, r) - sdf(px - .5, py, hw, hh, r);
+          const ny = sdf(px, py + .5, hw, hh, r) - sdf(px, py - .5, hw, hh, r);
+          const len = Math.hypot(nx, ny) || 1, t = 1 - dist / bezel, mag = t * t;
+          dx = -nx / len * mag; dy = -ny / len * mag;
+        }
+        const i = (y * w + x) * 4;
+        d[i] = 128 + dx * 127; d[i + 1] = 128 + dy * 127; d[i + 2] = 128; d[i + 3] = 255;
+      }
+      ctx.putImageData(img, 0, 0);
+      return c.toDataURL();
+    }
+    function filterFor(w, h, r, mode) {
+      const key = `${w}x${h}r${r}${mode}`;
+      if (cache.has(key)) return cache.get(key);
+      const id = 'lg' + cache.size, m = MODE[mode];
+      const bezel = Math.max(6, Math.min(Math.min(w, h) * DEPTH, Math.max(r, 10), 28));
+      const S = Math.min(REFRACTION, Math.min(w, h) * .7) * m.refr;
+      const disp = (sc, res) => `<feDisplacementMap in="b" in2="m" scale="${sc.toFixed(1)}" xChannelSelector="R" yChannelSelector="G" result="${res}"/>`;
+      const f = document.createElementNS(NS, 'filter');
+      f.setAttribute('id', id);
+      ['x', 'y'].forEach(a => f.setAttribute(a, '0'));
+      f.setAttribute('width', w); f.setAttribute('height', h);
+      f.setAttribute('filterUnits', 'userSpaceOnUse');
+      f.setAttribute('color-interpolation-filters', 'sRGB');
+      // แยกช่องสี R/G/B ให้หักเหต่างกันเล็กน้อย = Dispersion (ขอบรุ้งจางๆ แบบกระจกจริง)
+      f.innerHTML = `
+        <feGaussianBlur in="SourceGraphic" stdDeviation="${m.blur}" result="b"/>
+        <feImage href="${mapURL(w, h, r, bezel)}" x="0" y="0" width="${w}" height="${h}" preserveAspectRatio="none" result="m"/>
+        ${disp(S, 'd1')}<feColorMatrix in="d1" type="matrix" values="1 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 1 0" result="cr"/>
+        ${disp(S * (1 - DISPERSION / 2), 'd2')}<feColorMatrix in="d2" type="matrix" values="0 0 0 0 0  0 1 0 0 0  0 0 0 0 0  0 0 0 1 0" result="cg"/>
+        ${disp(S * (1 - DISPERSION), 'd3')}<feColorMatrix in="d3" type="matrix" values="0 0 0 0 0  0 0 0 0 0  0 0 1 0 0  0 0 0 1 0" result="cb"/>
+        <feBlend in="cr" in2="cg" mode="screen" result="rg"/>
+        <feBlend in="rg" in2="cb" mode="screen" result="rgb"/>
+        <feColorMatrix in="rgb" type="saturate" values="1.6"/>`;
+      defs.appendChild(f);
+      cache.set(key, id);
+      return id;
+    }
+
+    function clear(el) { el.style.backdropFilter = ''; delete el.dataset.lg; }
+    function apply(el) {
+      if (!enabled || !el.isConnected) return;
+      const w = Math.round(el.offsetWidth), h = Math.round(el.offsetHeight);
+      if (w < 8 || h < 8 || w * h > 420000) return clear(el);
+      const r = Math.round(Math.min(parseFloat(getComputedStyle(el).borderTopLeftRadius) || 0, w / 2, h / 2));
+      const mode = el.classList.contains('glass-strong') ? 'strong' : (el.matches('.gbtn, .ggroup') || h <= 32) ? 'clear' : 'regular';
+      el.dataset.lg = mode;
+      el.style.backdropFilter = `url(#${filterFor(w, h, r, mode)})`;
+    }
+    function track(el) { if (!els.has(el)) { els.add(el); ro.observe(el); } }
+    function scan(root) {
+      if (root.nodeType !== 1) return;
+      if (root.matches('.glass, .glass-strong')) track(root);
+      root.querySelectorAll('.glass, .glass-strong').forEach(track);
+    }
+    function setEnabled(on) {
+      enabled = !!on && supported && !reduced;
+      document.documentElement.classList.toggle('lg-on', enabled);
+      els.forEach(el => enabled ? apply(el) : clear(el));
+    }
+    function init() {
+      if (!supported) return;
+      const svg = document.createElementNS(NS, 'svg');
+      svg.setAttribute('aria-hidden', 'true');
+      svg.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden';
+      defs = document.createElementNS(NS, 'defs');
+      svg.appendChild(defs);
+      document.body.appendChild(svg);
+      ro = new ResizeObserver(entries => entries.forEach(e => apply(e.target)));
+      new MutationObserver(muts => {
+        let removed = false;
+        for (const m of muts) { m.addedNodes.forEach(scan); if (m.removedNodes.length) removed = true; }
+        if (removed) els.forEach(el => { if (!el.isConnected) { ro.unobserve(el); els.delete(el); } });
+      }).observe(document.body, { childList: true, subtree: true });
+      scan(document.body);
+      let pref = null;
+      try { pref = localStorage.getItem('wt-lg'); } catch (e) {}
+      setEnabled(pref !== '0');
+      // แสงสะท้อนเคลื่อนตามตำแหน่งนิ้ว/เมาส์
+      document.addEventListener('pointermove', (e) => {
+        const g = e.target.closest && e.target.closest('.glass, .glass-strong');
+        if (!g) return;
+        const r = g.getBoundingClientRect();
+        g.style.setProperty('--lx', `${e.clientX - r.left}px`);
+        g.style.setProperty('--ly', `${e.clientY - r.top}px`);
+      }, { passive: true });
+    }
+    return { init, setEnabled, supported, reduced, get enabled() { return enabled; } };
+  })();
+
+  // ---------- Scroll edge effect ----------
+  const edge = (scroller, head) => {
+    const on = () => head.classList.toggle('scrolled', (scroller === window ? window.scrollY : scroller.scrollTop) > 4);
+    scroller.addEventListener('scroll', on, { passive: true }); on();
+  };
+  edge(window, $('#topbar'));
+  edge($('#formScroll'), $('#formHead'));
+
+  // ---------- Render ----------
+  function counts() {
+    const c = { all: items.length, active: 0, expiring: 0, expired: 0 };
+    items.forEach(i => c[statusOf(i)]++);
+    return c;
+  }
+  function render() { renderStats(); renderSegmented(); renderList(); }
+
+  function renderStats() {
+    const c = counts();
+    $('#subtitle').textContent = items.length ? `${items.length} รายการ · คุ้มครองอยู่ ${c.active + c.expiring} รายการ` : 'ยังไม่มีสินค้า';
+    const tiles = [
+      { key: 'all', label: 'ทั้งหมด', color: 'bg-sgray', svg: '<path d="M4 13h4l1.5 2.5h5L16 13h4M5.5 5h13L21 13v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5z"/>' },
+      { key: 'active', label: 'กำลังคุ้มครอง', color: 'bg-sgreen', svg: '<path d="M12 3l7 3v5.5c0 4.3-3 7.7-7 9.5-4-1.8-7-5.2-7-9.5V6z"/><path d="M8.8 12l2.2 2.2 4.2-4.4"/>' },
+      { key: 'expiring', label: `ใกล้หมด (${SOON_DAYS} วัน)`, color: 'bg-sorange', svg: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>' },
+      { key: 'expired', label: 'หมดประกันแล้ว', color: 'bg-sred', svg: '<circle cx="12" cy="12" r="8.5"/><path d="M9 9l6 6M15 9l-6 6"/>' },
+    ];
+    $('#stats').innerHTML = tiles.map(t => `
+      <button data-status="${t.key}" class="tile text-left p-4 rounded-[26px] bg-card transition-transform duration-300 active:scale-[.97] ${ui.status === t.key ? 'ring-2 ring-sblue' : ''}">
+        <div class="flex items-start justify-between">
+          <span class="h-9 w-9 rounded-full ${t.color} text-white grid place-items-center">
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">${t.svg}</svg>
+          </span>
+          <span class="text-[30px] leading-none font-bold tabular-nums">${c[t.key]}</span>
+        </div>
+        <div class="mt-3 t-sub font-semibold text-label2">${t.label}</div>
+      </button>`).join('');
+  }
+
+  function renderSegmented() {
+    const segs = [['all', 'ทั้งหมด'], ['active', 'คุ้มครอง'], ['expiring', 'ใกล้หมด'], ['expired', 'หมดแล้ว']];
+    $('#segmented').innerHTML = segs.map(([k, l]) => `<button data-status="${k}" class="${ui.status === k ? 'on' : ''}">${l}</button>`).join('');
+  }
+
+  function filtered() {
+    const q = ui.q.trim().toLowerCase();
+    const list = items.filter(i => {
+      if (ui.category !== 'all' && i.category !== ui.category) return false;
+      if (ui.status !== 'all' && statusOf(i) !== ui.status) return false;
+      if (q && ![i.name, i.brand, i.serial, i.store].some(v => (v || '').toLowerCase().includes(q))) return false;
+      return true;
+    });
+    const by = {
+      'expiry-asc': (a, b) => a.expiryDate.localeCompare(b.expiryDate),
+      'expiry-desc': (a, b) => b.expiryDate.localeCompare(a.expiryDate),
+      'purchase-desc': (a, b) => b.purchaseDate.localeCompare(a.purchaseDate),
+      'name-asc': (a, b) => a.name.localeCompare(b.name, 'th'),
+    }[ui.sort];
+    if (ui.sort === 'expiry-asc') {
+      const t = toISO(today());
+      return list.sort((a, b) => {
+        const ea = a.expiryDate < t, eb = b.expiryDate < t;
+        if (ea !== eb) return ea ? 1 : -1;
+        return ea ? b.expiryDate.localeCompare(a.expiryDate) : by(a, b);
+      });
+    }
+    return list.sort(by);
+  }
+
+  function poster(i, size = 'lg') {
+    const cat = catOf(i.category), thumb = (i.images || []).find(isSafeUrl);
+    const fallback = `<div class="absolute inset-0 grid place-items-center text-white" style="${grad(cat)}">${icon(cat.id, size === 'lg' ? 'h-12 w-12 sm:h-14 sm:w-14 drop-shadow-sm' : 'h-16 w-16')}</div>`;
+    return fallback + (thumb ? `<img src="${esc(thumb)}" alt="" loading="lazy" class="absolute inset-0 h-full w-full object-cover" onerror="this.remove()" />` : '');
+  }
+
+  function renderList() {
+    const list = filtered(), empty = $('#empty');
+    if (!list.length) {
+      $('#list').innerHTML = '';
+      empty.classList.remove('hidden');
+      empty.innerHTML = items.length
+        ? `<div class="mx-auto h-16 w-16 rounded-full fill grid place-items-center text-label2">
+             <svg class="h-8 w-8" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path stroke-linecap="round" d="M20 20l-4.8-4.8"/></svg></div>
+           <p class="mt-4 t-title2">ไม่พบผลลัพธ์</p>
+           <p class="mt-1 t-sub text-label2">ลองเปลี่ยนคำค้นหาหรือตัวกรอง</p>
+           <button id="resetFilter" class="mt-5 gbtn gbtn-text glass">ล้างตัวกรอง</button>`
+        : `<div class="mx-auto h-20 w-20 rounded-full grid place-items-center text-white" style="background:linear-gradient(160deg,#3CD3FE,#0088FF)">
+             <svg class="h-10 w-10" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M12 3l7 3v5.5c0 4.3-3 7.7-7 9.5-4-1.8-7-5.2-7-9.5V6z"/><path d="M8.8 12l2.2 2.2 4.2-4.4"/></svg>
+           </div>
+           <p class="mt-5 t-title2">ยังไม่มีสินค้า</p>
+           <p class="mt-1.5 t-sub text-label2 max-w-xs mx-auto">บันทึกการรับประกันไว้ที่นี่ แล้วเราจะบอกคุณเมื่อใกล้หมดประกัน</p>
+           <div class="mt-6 flex flex-col items-center gap-3">
+             <button data-open-add class="gbtn gbtn-prominent gbtn-text !h-[50px] !px-8 t-headline">เพิ่มสินค้า</button>
+             <button data-load-sample class="gbtn gbtn-text glass">ลองใช้ข้อมูลตัวอย่าง</button>
+           </div>`;
+      return;
+    }
+    empty.classList.add('hidden');
+    $('#list').innerHTML = list.map(i => {
+      const st = statusOf(i), S = STATUS[st], cat = catOf(i.category), d = daysLeft(i.expiryDate);
+      return `
+      <button type="button" data-id="${i.id}" class="lockup text-left fade-in min-w-0">
+        <div class="poster relative aspect-[4/3] rounded-[26px] overflow-hidden">
+          ${poster(i)}
+          <span class="absolute top-2.5 left-2.5 inline-flex items-center gap-1 h-7 px-2.5 rounded-full glass t-cap font-semibold text-label">
+            <span class="h-2 w-2 rounded-full ${S.bg}"></span>${S.label}
+          </span>
+          <div class="absolute left-4 right-4 bottom-3 h-1 rounded-full bg-white/35 overflow-hidden"><div class="h-full rounded-full bg-white" style="width:${progress(i)}%"></div></div>
+        </div>
+        <div class="mt-2.5 px-1">
+          <div class="t-headline !text-[15px] leading-tight line-clamp-1">${esc(i.name)}</div>
+          <div class="mt-0.5 t-foot text-label2 line-clamp-1">${esc(i.brand || cat.label)}</div>
+          <div class="mt-0.5 t-foot font-medium ${st === 'active' ? 'text-label2' : S.text}">${fmtLeft(d)}</div>
+        </div>
+      </button>`;
+    }).join('');
+  }
+
+  // ---------- Detail sheet ----------
+  function openDetail(id) {
+    const i = items.find(x => x.id === id);
+    if (!i) return;
+    const st = statusOf(i), S = STATUS[st], cat = catOf(i.category), d = daysLeft(i.expiryDate);
+    const row = (k, v) => v ? `<div class="row justify-between"><span class="shrink-0">${k}</span><span class="detail text-right break-all min-w-0">${v}</span></div>` : '';
+    const imgs = (i.images || []).filter(isSafeUrl);
+    const receipts = (i.receipts || []).filter(isSafeReceipt);
+    detailId = i.id;
+    $('#detailBody').innerHTML = `
+      <div class="shrink-0 pt-2 flex justify-center"><span class="h-[5px] w-9 rounded-full bg-[var(--label3)]"></span></div>
+      <div id="detailHead" class="edge-top shrink-0 z-10 px-4 pt-2 pb-2 grid grid-cols-[1fr_auto_1fr] items-center">
+        <button data-close class="gbtn glass justify-self-start" aria-label="ปิด">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg>
+        </button>
+        <div class="t-headline">รายละเอียด</div>
+        <button data-edit="${i.id}" class="gbtn gbtn-text glass justify-self-end">แก้ไข</button>
+      </div>
+      <div id="detailScroll" class="overflow-y-auto px-4 pb-10">
+        <div class="pt-3 flex flex-col items-center text-center">
+          <div class="relative h-[124px] w-[164px] rounded-[30px] overflow-hidden tile">${poster(i, 'sm')}</div>
+          <h2 class="mt-4 t-title2 break-words max-w-full">${esc(i.name)}</h2>
+          <p class="mt-1 t-sub text-label2">${esc([i.brand, cat.label].filter(Boolean).join(' · '))}</p>
+        </div>
+
+        <div class="group-list mt-6 p-5">
+          <div class="flex items-center justify-between">
+            <span class="inline-flex items-center gap-1.5 h-8 px-3 rounded-full ${S.tint} ${S.text} t-foot font-semibold"><span class="h-2 w-2 rounded-full ${S.bg}"></span>${S.long}</span>
+            <span class="t-foot text-label2">${i.customExpiry ? 'กำหนดวันสิ้นสุดเอง' : `ระยะประกัน ${fmtDuration(i.duration, i.unit)}`}</span>
+          </div>
+          <div class="mt-3 text-[28px] leading-[34px] font-bold ${st === 'active' ? '' : S.text}">${fmtLeft(d)}</div>
+          <div class="mt-3 h-1.5 rounded-full fill overflow-hidden"><div class="h-full rounded-full ${S.bg}" style="width:${progress(i)}%"></div></div>
+          <div class="mt-2 flex justify-between t-foot text-label2"><span>ซื้อ ${fmtDate(i.purchaseDate)}</span><span>หมด ${fmtDate(i.expiryDate)}</span></div>
+        </div>
+
+        <div class="section-header">ข้อมูลสินค้า</div>
+        <div class="group-list">
+          ${row('หมวดหมู่', esc(cat.label))}
+          ${row('แบรนด์', esc(i.brand))}
+          ${i.serial ? `<button data-copy="${esc(i.serial)}" class="row w-full justify-between active:bg-black/5"><span class="shrink-0">ซีเรียล</span><span class="detail font-mono text-[15px] break-all flex items-center gap-2">${esc(i.serial)}<svg class="h-[18px] w-[18px] text-sblue shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2.5"/><path d="M16 8V6a2 2 0 00-2-2H6a2 2 0 00-2 2v8a2 2 0 002 2h2"/></svg></span></button>` : ''}
+          ${row('ร้านค้า', esc(i.store))}
+          ${i.price != null ? row('ราคา', `${fmtPrice(i.price)} บาท`) : ''}
+          <div class="row justify-between"><span>วันที่ซื้อ</span><span class="pill-value">${fmtDate(i.purchaseDate)}</span></div>
+          <div class="row justify-between"><span>หมดประกัน</span><span class="pill-value">${fmtDate(i.expiryDate)}</span></div>
+        </div>
+
+        ${receipts.length ? `<div class="section-header">ใบเสร็จ</div>
+          <div class="grid grid-cols-3 gap-2">${receipts.map((r, idx) => `<button data-receipt="${idx}" class="relative aspect-square rounded-[20px] overflow-hidden bg-card active:opacity-70" aria-label="เปิดใบเสร็จ">${receiptTile(r, '')}</button>`).join('')}</div>` : ''}
+
+        ${/^https?:\/\//i.test(i.receiptUrl || '') ? `<div class="group-list mt-6"><a href="${esc(i.receiptUrl)}" target="_blank" rel="noopener noreferrer" class="row justify-between active:bg-black/5"><span class="flex items-center gap-3 text-sblue"><svg class="h-[22px] w-[22px]" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path d="M10 14a4 4 0 005.7 0l3-3a4 4 0 00-5.7-5.7l-1 1M14 10a4 4 0 00-5.7 0l-3 3a4 4 0 005.7 5.7l1-1"/></svg>เปิดลิงก์ใบเสร็จ</span>${CHEV}</a></div>` : ''}
+
+        ${i.notes ? `<div class="section-header">หมายเหตุ</div><div class="group-list"><p class="px-4 py-3.5 whitespace-pre-wrap break-words">${esc(i.notes)}</p></div>` : ''}
+
+        ${imgs.length ? `<div class="section-header">รูปภาพ</div>
+          <div class="grid grid-cols-3 gap-2">${imgs.map(src => `<button data-zoom="${esc(src)}" class="aspect-square rounded-[20px] overflow-hidden bg-card cursor-zoom-in active:opacity-70"><img src="${esc(src)}" alt="" class="h-full w-full object-cover" loading="lazy"/></button>`).join('')}</div>` : ''}
+
+        <div class="group-list mt-8">
+          <button data-delete="${i.id}" class="row w-full justify-center text-sred active:bg-black/5">ลบสินค้า</button>
+        </div>
+      </div>`;
+    openModal('#detailModal');
+    edge($('#detailScroll'), $('#detailHead'));
+  }
+
+  function askDelete(id, after) {
+    const it = items.find(x => x.id === id);
+    if (!it) return;
+    confirmDialog('ลบสินค้านี้?', `“${it.name}” จะถูกลบออกถาวร และไม่สามารถกู้คืนได้`, 'ลบ', () => {
+      items = items.filter(x => x.id !== id);
+      markDeleted([id]);
+      save(); after && after(); render(); toast('ลบสินค้าแล้ว');
+    });
+  }
+
+  $('#detailBody').addEventListener('click', (e) => {
+    const t = e.target.closest('button');
+    if (!t) return;
+    if (t.dataset.zoom) openLightbox(t.dataset.zoom);
+    if (t.dataset.receipt) {
+      const r = (items.find(x => x.id === detailId)?.receipts || []).filter(isSafeReceipt)[Number(t.dataset.receipt)];
+      if (r) openReceipt(r);
+    }
+    if (t.dataset.copy) navigator.clipboard?.writeText(t.dataset.copy).then(() => toast('คัดลอกซีเรียลแล้ว'));
+    if (t.dataset.edit) { closeModal('#detailModal'); openForm(t.dataset.edit); }
+    if (t.dataset.delete) askDelete(t.dataset.delete, () => closeModal('#detailModal'));
+  });
+
+  // ---------- Form ----------
+  const form = $('#form');
+  const F = (n) => form.elements[n];
+
+  function fillCategorySelects() {
+    F('category').innerHTML = CATEGORIES.map(c => `<option value="${c.id}" data-icon="${c.id}">${c.label}</option>`).join('');
+    $('#filterCategory').innerHTML = `<option value="all" data-icon="all">ทุกหมวดหมู่</option>` +
+      CATEGORIES.map((c, i) => `<option value="${c.id}" data-icon="${c.id}"${i === 0 ? ' data-sep' : ''}>${c.label}</option>`).join('');
+  }
+
+  // ---------- Pop-up Button + Menu แบบ iOS 27 (แทน dropdown ของเบราว์เซอร์) ----------
+  // <select> เดิมยังเก็บค่าอยู่ (ซ่อนไว้) เพื่อให้โค้ดส่วนอื่นและ event 'change' ทำงานเหมือนเดิม
+  const MENU_ICONS = {
+    ...ICONS,
+    all: '<rect x="4" y="4" width="7" height="7" rx="1.8"/><rect x="13" y="4" width="7" height="7" rx="1.8"/><rect x="4" y="13" width="7" height="7" rx="1.8"/><rect x="13" y="13" width="7" height="7" rx="1.8"/>',
+    'sort-expiry': '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/>',
+    'sort-late': '<rect x="4" y="5" width="16" height="15" rx="2.5"/><path d="M4 10h16M8 3v4M16 3v4"/>',
+    'sort-purchase': '<path d="M5 8h14l-1 12H6z"/><path d="M9 8V6a3 3 0 016 0v2"/>',
+    'sort-name': '<path d="M3.5 18l4-12 4 12M5 14h5"/><path d="M17.5 6v12m0 0l-3-3m3 3l3-3"/>',
+  };
+  const CHECK_SVG = '<svg fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7"/></svg>';
+  const UPDOWN_SVG = '<svg fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M8 9l4-4 4 4M8 15l4 4 4-4"/></svg>';
+  const popupSelects = [];
+  let openMenu = null; // { el, sel, btn, zone }
+
+  function enhanceSelect(sel, variant) {
+    sel.style.display = 'none';
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = variant === 'row' ? 'popup-row' : 'popup-btn glass';
+    btn.setAttribute('aria-haspopup', 'listbox');
+    btn.setAttribute('aria-expanded', 'false');
+    btn.setAttribute('aria-label', sel.getAttribute('aria-label') || '');
+    btn.innerHTML = `<span class="plabel"></span>${UPDOWN_SVG}`;
+    sel.after(btn);
+    sel._sync = () => { btn.querySelector('.plabel').textContent = sel.options[sel.selectedIndex]?.textContent || ''; };
+    sel.addEventListener('change', sel._sync);
+    sel._sync();
+    const zone = variant === 'row' ? btn.closest('.row') : btn;
+    btn.addEventListener('click', (e) => { e.stopPropagation(); togglePopup(sel, btn, zone, variant); });
+    if (zone !== btn) zone.addEventListener('click', () => btn.click());
+    popupSelects.push(sel);
+  }
+  const syncPopups = () => popupSelects.forEach(s => s._sync());
+
+  function closePopup(immediate) {
+    if (!openMenu) return;
+    const { el, btn } = openMenu;
+    openMenu = null;
+    btn.setAttribute('aria-expanded', 'false');
+    if (immediate) return el.remove();
+    el.classList.add('out');
+    setTimeout(() => el.remove(), 170);
+  }
+
+  function togglePopup(sel, btn, zone, variant) {
+    if (openMenu && openMenu.sel === sel) return closePopup();
+    closePopup(true);
+    $('#menu').classList.add('hidden');
+    const el = document.createElement('div');
+    el.className = 'ios-menu glass-strong';
+    el.setAttribute('role', 'listbox');
+    let html = '';
+    [...sel.options].forEach((o, i) => {
+      if (i > 0 && (o.dataset.sep !== undefined || o.dataset.section)) html += '<div class="menu-sep"></div>';
+      if (o.dataset.section) html += `<div class="menu-section">${esc(o.dataset.section)}</div>`;
+      const ic = MENU_ICONS[o.dataset.icon];
+      html += `<button type="button" role="option" aria-selected="${o.selected}" data-value="${esc(o.value)}" class="menu-item">
+        <span class="mcheck">${o.selected ? CHECK_SVG : ''}</span>
+        ${ic ? `<svg class="micon" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24">${ic}</svg>` : ''}
+        <span class="flex-1 min-w-0">${esc(o.textContent)}</span>
+      </button>`;
+    });
+    el.innerHTML = html;
+    document.body.appendChild(el);
+
+    // วางเมนูใกล้ปุ่ม: ด้านล่างถ้าพื้นที่พอ ไม่งั้นขึ้นด้านบน และไม่ให้ล้นขอบจอ
+    // เรียกซ้ำทุกเฟรมระหว่างเปิด เพื่อให้เมนูเกาะปุ่มไว้ แม้ sheet ยังเลื่อนอยู่
+    const m = 8;
+    const width = Math.min(Math.max(238, btn.getBoundingClientRect().width), window.innerWidth - m * 2);
+    el.style.width = width + 'px';
+    const natural = el.scrollHeight;
+    let last = '';
+    const place = () => {
+      const r = btn.getBoundingClientRect(), vw = window.innerWidth, vh = window.innerHeight;
+      const below = vh - r.bottom - m * 2, above = r.top - m * 2;
+      const down = natural <= below || below >= above;
+      const height = Math.max(120, Math.min(natural, down ? below : above));
+      const top = down ? r.bottom + m : r.top - m - height;
+      const left = Math.max(m, Math.min(variant === 'row' ? r.right - width : r.left, vw - width - m));
+      const key = `${top}|${left}|${height}`;
+      if (key === last) return;
+      last = key;
+      Object.assign(el.style, { top: top + 'px', left: left + 'px', maxHeight: height + 'px',
+        transformOrigin: `${r.left + r.width / 2 - left}px ${down ? 0 : height}px` });
+    };
+    place();
+    const follow = () => { if (openMenu && openMenu.el === el) { place(); requestAnimationFrame(follow); } };
+
+    btn.setAttribute('aria-expanded', 'true');
+    openMenu = { el, sel, btn, zone };
+    requestAnimationFrame(follow);
+    el.addEventListener('click', (e) => {
+      const it = e.target.closest('.menu-item');
+      if (!it) return;
+      if (sel.value !== it.dataset.value) {
+        sel.value = it.dataset.value;
+        sel.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+      closePopup();
+      btn.focus({ preventScroll: true });
+    });
+    el.addEventListener('keydown', (e) => {
+      const list = [...el.querySelectorAll('.menu-item')], i = list.indexOf(document.activeElement);
+      if (e.key === 'ArrowDown') { e.preventDefault(); list[(i + 1) % list.length].focus(); }
+      if (e.key === 'ArrowUp') { e.preventDefault(); list[(i - 1 + list.length) % list.length].focus(); }
+      if (e.key === 'Tab') { e.preventDefault(); closePopup(); btn.focus(); }
+    });
+    (el.querySelector('[aria-selected="true"]') || el.querySelector('.menu-item'))?.focus({ preventScroll: true });
+  }
+  document.addEventListener('pointerdown', (e) => {
+    if (openMenu && !openMenu.el.contains(e.target) && !openMenu.zone.contains(e.target)) closePopup();
+  }, true);
+  window.addEventListener('resize', () => closePopup(true));
+  document.addEventListener('scroll', (e) => { if (openMenu && !openMenu.el.contains(e.target)) closePopup(); }, true);
+
+  // ---------- ระยะเวลารับประกัน (Chips) + กำหนดวันสิ้นสุดเอง ----------
+  const DURATION_CHIPS = [3, 6, 10, 12, 18, 24]; // เดือน
+  $('#durationChips').innerHTML = DURATION_CHIPS.map(m =>
+    `<button type="button" class="chip" role="radio" aria-checked="false" data-months="${m}">${m} เดือน</button>`).join('');
+
+  function setDuration(m) {
+    F('duration').value = m || '';
+    $('#durationChips').querySelectorAll('.chip').forEach(c => c.setAttribute('aria-checked', String(Number(c.dataset.months) === m)));
+    updateExpiryPreview();
+  }
+  $('#durationChips').addEventListener('click', (e) => {
+    const c = e.target.closest('.chip');
+    if (c && !c.disabled) { setDuration(Number(c.dataset.months)); $('#durationRow').classList.remove('invalid'); }
+  });
+  $('#durationChips').addEventListener('keydown', (e) => {
+    if (!['ArrowRight', 'ArrowLeft', 'ArrowDown', 'ArrowUp'].includes(e.key)) return;
+    e.preventDefault();
+    const list = [...$('#durationChips').querySelectorAll('.chip')], i = list.indexOf(document.activeElement);
+    const n = list[(i + (e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : list.length - 1)) % list.length];
+    n.focus(); n.click();
+  });
+
+  function setCustomExpiry(on) {
+    F('customExpiry').checked = on;
+    $('#customExpiryRow').classList.toggle('hidden', !on);
+    $('#durationChips').querySelectorAll('.chip').forEach(c => { c.disabled = on; });
+    $('#expiryFooter').textContent = on
+      ? 'ใช้วันสิ้นสุดประกันที่กำหนดเองแทนระยะเวลาที่เลือก'
+      : 'วันหมดประกันคำนวณจากวันที่ซื้อและระยะเวลาที่เลือกโดยอัตโนมัติ';
+    if (on && !F('expiryDate').value) {
+      F('expiryDate').value = calcExpiry(F('purchaseDate').value || toISO(today()), Number(F('duration').value) || 12, 'months');
+    }
+    updateExpiryPreview();
+  }
+  F('customExpiry').addEventListener('change', (e) => setCustomExpiry(e.target.checked));
+
+  function currentExpiry() {
+    return F('customExpiry').checked
+      ? (F('expiryDate').value || null)
+      : calcExpiry(F('purchaseDate').value, Number(F('duration').value), 'months');
+  }
+  function updateExpiryPreview() {
+    const pd = F('purchaseDate').value, ed = F('expiryDate').value;
+    $('#purchaseDateText').textContent = pd ? fmtDate(pd) : 'เลือกวันที่';
+    $('#expiryDateText').textContent = ed ? fmtDate(ed) : 'เลือกวันที่';
+    const exp = currentExpiry(), el = $('#expiryPreview');
+    if (!exp) { el.textContent = '—'; return; }
+    const S = STATUS[statusOf({ expiryDate: exp })];
+    el.innerHTML = `<span class="h-2 w-2 rounded-full ${S.bg}"></span>${fmtDate(exp)}`;
+  }
+  ['purchaseDate', 'expiryDate'].forEach(n => {
+    F(n).addEventListener('input', updateExpiryPreview);
+    F(n).addEventListener('change', updateExpiryPreview);
+    F(n).addEventListener('click', (e) => { try { e.target.showPicker(); } catch (_) {} });
+  });
+
+  // ---------- ราคา ----------
+  const parsePrice = (s) => { const t = String(s || '').replace(/[,\s฿]/g, ''); return t === '' ? null : Number(t); };
+  const fmtPrice = (n) => n == null ? '' : n.toLocaleString('th-TH', { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 });
+  F('price').addEventListener('blur', () => { const n = parsePrice(F('price').value); if (Number.isFinite(n) && n >= 0) F('price').value = fmtPrice(n); });
+  F('price').addEventListener('focus', () => { const n = parsePrice(F('price').value); if (Number.isFinite(n)) F('price').value = String(n); });
+
+  // ---------- เปิดฟอร์ม ----------
+  function monthsOf(it) {
+    if (!it?.duration) return null;
+    return it.unit === 'years' ? it.duration * 12 : it.duration;
+  }
+  function openForm(id) {
+    form.reset();
+    form.querySelectorAll('.invalid').forEach(el => el.classList.remove('invalid'));
+    const it = id ? items.find(x => x.id === id) : null;
+    $('#formTitle').textContent = it ? 'แก้ไขสินค้า' : 'สินค้าใหม่';
+    F('id').value = it?.id || '';
+    F('name').value = it?.name || '';
+    F('category').value = it?.category || 'electronics';
+    F('brand').value = it?.brand || '';
+    F('purchaseDate').value = it?.purchaseDate || toISO(today());
+    F('store').value = it?.store || '';
+    F('price').value = it?.price != null ? fmtPrice(it.price) : '';
+    F('receiptUrl').value = it?.receiptUrl || '';
+    F('notes').value = it?.notes || '';
+    formImages = [...(it?.images || [])];
+    formReceipts = [...(it?.receipts || [])];
+    $('#formDeleteWrap').classList.toggle('hidden', !it);
+
+    // ระยะเวลา: ถ้าตรงกับ chip ให้เลือก chip, ถ้าไม่ตรง (เช่นข้อมูลเก่า 10 ปี) ให้ใช้วันสิ้นสุดที่กำหนดเอง
+    const months = monthsOf(it);
+    const custom = !!it && (it.customExpiry || !DURATION_CHIPS.includes(months));
+    F('expiryDate').value = custom ? it.expiryDate : '';
+    setDuration(it ? (DURATION_CHIPS.includes(months) ? months : null) : 12);
+    setCustomExpiry(custom);
+
+    syncPopups();
+    renderImgPreview();
+    renderReceiptPreview();
+    openModal('#formModal');
+    $('#formScroll').scrollTop = 0;
+    $('#formHead').classList.remove('scrolled');
+    if (!it && window.matchMedia('(pointer: fine)').matches) setTimeout(() => F('name').focus(), 60);
+  }
+  $('#formDelete').addEventListener('click', () => askDelete(F('id').value, () => closeModal('#formModal')));
+
+  // ---------- รูปภาพสินค้า ----------
+  const REMOVE_BTN = (attr, idx) => `<button type="button" ${attr}="${idx}" class="absolute top-1 right-1 h-6 w-6 rounded-full glass grid place-items-center text-label" aria-label="ลบ">
+      <svg class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24"><path stroke-linecap="round" d="M6 6l12 12M18 6L6 18"/></svg></button>`;
+  function renderImgPreview() {
+    $('#imgPreviewRow').classList.toggle('hidden', !formImages.length);
+    $('#imgPreview').innerHTML = formImages.map((src, idx) => `
+      <div class="relative aspect-square rounded-[14px] overflow-hidden fill">
+        <img src="${esc(src)}" alt="" class="h-full w-full object-cover" />${REMOVE_BTN('data-remove-img', idx)}
+      </div>`).join('');
+  }
+  $('#imgPreview').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-remove-img]');
+    if (b) { formImages.splice(Number(b.dataset.removeImg), 1); renderImgPreview(); }
+  });
+
+  function compressImage(file, maxSize = 1280, quality = 0.75) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = reject;
+      reader.onload = () => {
+        const img = new Image();
+        img.onerror = reject;
+        img.onload = () => {
+          const r = Math.min(1, maxSize / Math.max(img.width, img.height));
+          const w = Math.round(img.width * r), h = Math.round(img.height * r);
+          const c = document.createElement('canvas');
+          c.width = w; c.height = h;
+          const ctx = c.getContext('2d');
+          ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, w, h);
+          ctx.drawImage(img, 0, 0, w, h);
+          resolve(c.toDataURL('image/jpeg', quality));
+        };
+        img.src = reader.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+  const readDataURL = (file) => new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(file); });
+
+  $('#imgFile').addEventListener('change', async (e) => {
+    for (const f of [...e.target.files].filter(f => f.type.startsWith('image/'))) {
+      try { formImages.push(await compressImage(f)); } catch { toast('อ่านไฟล์รูปไม่ได้: ' + f.name); }
+    }
+    e.target.value = '';
+    renderImgPreview();
+  });
+
+  // ---------- ใบเสร็จ (รูปภาพ หรือ PDF) ----------
+  const MAX_PDF = 5 * 1024 * 1024;
+  const PDF_ICON = '<svg class="h-7 w-7" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8z"/><path d="M14 3v5h5"/></svg>';
+  function receiptTile(r, inner) {
+    return r.type === 'application/pdf'
+      ? `<div class="absolute inset-0 flex flex-col items-center justify-center gap-1 p-2 text-sred">${PDF_ICON}<span class="t-cap text-label2 w-full text-center truncate">${esc(r.name || 'ใบเสร็จ.pdf')}</span></div>${inner}`
+      : `<img src="${esc(r.data)}" alt="" class="h-full w-full object-cover" />${inner}`;
+  }
+  function renderReceiptPreview() {
+    $('#receiptPreviewRow').classList.toggle('hidden', !formReceipts.length);
+    $('#receiptPreview').innerHTML = formReceipts.map((r, idx) =>
+      `<div class="relative aspect-square rounded-[14px] overflow-hidden fill">${receiptTile(r, REMOVE_BTN('data-remove-receipt', idx))}</div>`).join('');
+  }
+  $('#receiptPreview').addEventListener('click', (e) => {
+    const b = e.target.closest('[data-remove-receipt]');
+    if (b) { formReceipts.splice(Number(b.dataset.removeReceipt), 1); renderReceiptPreview(); }
+  });
+  $('#receiptFile').addEventListener('change', async (e) => {
+    for (const f of [...e.target.files]) {
+      try {
+        if (f.type === 'application/pdf') {
+          if (f.size > MAX_PDF) { toast(`${f.name} ใหญ่เกิน 5 MB`); continue; }
+          formReceipts.push({ name: f.name, type: f.type, data: await readDataURL(f) });
+        } else if (f.type.startsWith('image/')) {
+          formReceipts.push({ name: f.name, type: 'image/jpeg', data: await compressImage(f, 1800, 0.82) });
+        } else toast('รองรับเฉพาะรูปภาพหรือ PDF');
+      } catch { toast('อ่านไฟล์ไม่ได้: ' + f.name); }
+    }
+    e.target.value = '';
+    renderReceiptPreview();
+  });
+  function openReceipt(r) {
+    if (r.type !== 'application/pdf') return openLightbox(r.data);
+    // เปิด PDF ผ่าน Blob URL (เบราว์เซอร์ไม่อนุญาตให้เปิด data: URL ตรงๆ)
+    const [, b64] = r.data.split(',');
+    const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+    const url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
+    window.open(url, '_blank', 'noopener');
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+  }
+
+  // ---------- บันทึก ----------
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    form.querySelectorAll('.invalid').forEach(el => el.classList.remove('invalid'));
+    const bad = [];
+    const custom = F('customExpiry').checked;
+    const pd = F('purchaseDate').value;
+    const dur = Number(F('duration').value);
+    const exp = currentExpiry();
+    if (!F('name').value.trim()) bad.push('name');
+    if (!pd) bad.push('purchaseDate');
+    if (!custom && !DURATION_CHIPS.includes(dur)) bad.push('duration');
+    if (custom && (!exp || (pd && exp < pd))) bad.push('expiryDate');
+    const price = parsePrice(F('price').value);
+    if (price !== null && !(Number.isFinite(price) && price >= 0)) bad.push('price');
+    const rurl = F('receiptUrl').value.trim();
+    if (rurl && !/^https?:\/\//i.test(rurl)) bad.push('receiptUrl');
+    if (bad.length) {
+      bad.forEach(n => form.querySelector(`[data-field="${n}"]`)?.classList.add('invalid'));
+      form.querySelector(`[data-field="${bad[0]}"]`)?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+      const msg = { name: 'กรุณาใส่ชื่อสินค้า', duration: 'กรุณาเลือกระยะเวลารับประกัน', expiryDate: 'วันสิ้นสุดประกันต้องไม่ก่อนวันที่ซื้อ', price: 'ราคาไม่ถูกต้อง', receiptUrl: 'ลิงก์ต้องขึ้นต้นด้วย http:// หรือ https://' }[bad[0]];
+      return toast(msg || 'กรุณาตรวจสอบข้อมูลที่ไฮไลต์');
+    }
+    const data = {
+      id: F('id').value || uid(),
+      name: F('name').value.trim(),
+      category: F('category').value,
+      brand: F('brand').value.trim(),
+      purchaseDate: pd,
+      customExpiry: custom,
+      duration: custom ? monthsBetween(pd, exp) : dur,
+      unit: 'months',
+      expiryDate: exp,
+      store: F('store').value.trim(),
+      price,
+      receipts: formReceipts.slice(),
+      receiptUrl: rurl,
+      notes: F('notes').value.trim(),
+      images: formImages.slice(),
+      updatedAt: Date.now(),
+    };
+    const prev = items.slice();
+    const idx = items.findIndex(x => x.id === data.id);
+    if (idx >= 0) items[idx] = { ...items[idx], ...data };
+    else items.push({ ...data, createdAt: Date.now() });
+    if (!save()) { items = prev; return; }
+    closeModal('#formModal');
+    render();
+    toast(idx >= 0 ? 'บันทึกการแก้ไขแล้ว' : 'เพิ่มสินค้าแล้ว');
+  });
+
+  // ---------- Sample data ----------
+  function sampleData() {
+    const t = today();
+    const ago = (days) => { const d = new Date(t); d.setDate(d.getDate() - days); return toISO(d); };
+    const mk = (o) => ({ id: uid(), brand: '', serial: '', store: '', price: null, receipts: [], receiptUrl: '', notes: '', images: [], unit: 'months', customExpiry: false, createdAt: Date.now(),
+      ...o, expiryDate: o.expiryDate || calcExpiry(o.purchaseDate, o.duration, 'months') });
+    const tenYears = (pd) => calcExpiry(pd, 120, 'months');
+    const fridge = ago(400), sofa = ago(700);
+    return [
+      mk({ name: 'สมาร์ทโฟน รุ่น Pro 256GB', category: 'electronics', brand: 'Apple', serial: 'F2LXK9P0Q1', purchaseDate: ago(120), duration: 12, store: 'iStudio สยามพารากอน', price: 41900, notes: 'ซื้อ AppleCare+ เพิ่มได้ภายใน 60 วัน' }),
+      mk({ name: 'ตู้เย็น Inverter 2 ประตู', category: 'appliance', brand: 'Samsung', serial: 'RT38-0012345', purchaseDate: fridge, customExpiry: true, duration: 120, expiryDate: tenYears(fridge), store: 'Power Buy', price: 15990, notes: 'คอมเพรสเซอร์ 10 ปี / อะไหล่ 1 ปี' }),
+      mk({ name: 'โน้ตบุ๊ก 14 นิ้ว', category: 'computer', brand: 'Lenovo', serial: 'PF3ABC12', purchaseDate: ago(345), duration: 12, store: 'Banana IT', price: 28990 }),
+      mk({ name: 'แบตเตอรี่รถยนต์', category: 'automotive', brand: 'GS', purchaseDate: ago(560), duration: 18, store: 'B-Quik', price: 3200 }),
+      mk({ name: 'เครื่องฟอกอากาศ', category: 'appliance', brand: 'Xiaomi', serial: 'XM-AP4-77881', purchaseDate: ago(380), duration: 12, store: 'Shopee Mall', price: 4290 }),
+      mk({ name: 'สว่านไร้สาย 18V', category: 'tools', brand: 'Makita', purchaseDate: ago(30), duration: 6, store: 'HomePro', price: 5490 }),
+      mk({ name: 'นาฬิกาสมาร์ทวอทช์', category: 'fashion', brand: 'Garmin', purchaseDate: ago(200), duration: 24, store: 'Central', price: 12900 }),
+      mk({ name: 'โซฟา 3 ที่นั่ง', category: 'furniture', brand: 'IKEA', purchaseDate: sofa, customExpiry: true, duration: 120, expiryDate: tenYears(sofa), store: 'IKEA บางนา', price: 19990 }),
+    ];
+  }
+  function loadSample() { items = items.concat(sampleData()); save(); render(); toast('เพิ่มข้อมูลตัวอย่างแล้ว'); }
+
+  // ---------- Events ----------
+  $('#addBtn').addEventListener('click', () => openForm());
+  $('#list').addEventListener('click', (e) => { const c = e.target.closest('[data-id]'); if (c) openDetail(c.dataset.id); });
+  $('#empty').addEventListener('click', (e) => {
+    if (e.target.closest('#resetFilter')) {
+      ui = { ...ui, q: '', category: 'all', status: 'all' };
+      $('#search').value = ''; $('#searchClear').classList.add('hidden'); $('#filterCategory').value = 'all';
+      syncPopups();
+      render();
+    }
+    if (e.target.closest('[data-open-add]')) openForm();
+    if (e.target.closest('[data-load-sample]')) loadSample();
+  });
+
+  const setStatus = (e) => {
+    const b = e.target.closest('[data-status]');
+    if (!b) return;
+    ui.status = (ui.status === b.dataset.status && b.dataset.status !== 'all') ? 'all' : b.dataset.status;
+    render();
+  };
+  $('#stats').addEventListener('click', setStatus);
+  $('#segmented').addEventListener('click', setStatus);
+
+  let searchTimer;
+  $('#search').addEventListener('input', (e) => {
+    $('#searchClear').classList.toggle('hidden', !e.target.value);
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => { ui.q = e.target.value; renderList(); }, 120);
+  });
+  $('#searchClear').addEventListener('click', () => {
+    $('#search').value = ''; ui.q = ''; $('#searchClear').classList.add('hidden'); renderList(); $('#search').focus();
+  });
+  $('#filterCategory').addEventListener('change', (e) => { ui.category = e.target.value; renderList(); });
+  $('#sortBy').addEventListener('change', (e) => { ui.sort = e.target.value; renderList(); });
+
+  $('#themeBtn').addEventListener('click', () => {
+    const dark = document.documentElement.classList.toggle('dark');
+    try { localStorage.setItem('wt-theme', dark ? 'dark' : 'light'); } catch (e) {}
+  });
+
+  // Menu
+  function renderLgState() {
+    $('#lgState').textContent = !LiquidGlass.supported ? 'ใช้ Chrome/Edge' : LiquidGlass.reduced ? 'ปิดโดยระบบ' : LiquidGlass.enabled ? 'เปิด' : 'ปิด';
+  }
+  const fmtBytes = (b) => b >= 1e9 ? `${(b / 1e9).toFixed(1)} GB` : b >= 1e6 ? `${(b / 1e6).toFixed(1)} MB` : `${Math.max(1, Math.round(b / 1e3))} KB`;
+  async function renderStorageUsage() {
+    const el = $('#storageUsage');
+    if (!navigator.storage || !navigator.storage.estimate) { el.textContent = ''; return; }
+    try {
+      const [{ usage = 0, quota = 0 }, persisted] = await Promise.all([
+        navigator.storage.estimate(),
+        navigator.storage.persisted ? navigator.storage.persisted() : Promise.resolve(false),
+      ]);
+      el.textContent = `พื้นที่ในเครื่อง: ใช้ไป ${fmtBytes(usage)} จาก ${fmtBytes(quota)}${persisted ? ' · เก็บถาวร' : ''}`;
+    } catch (e) { el.textContent = ''; }
+  }
+  $('#menuBtn').addEventListener('click', (e) => { e.stopPropagation(); closePopup(true); renderLgState(); renderStorageUsage(); $('#menu').classList.toggle('hidden'); });
+  document.addEventListener('click', (e) => { if (!e.target.closest('#menu')) $('#menu').classList.add('hidden'); });
+  $('#menu').addEventListener('click', (e) => {
+    const a = e.target.closest('[data-action]')?.dataset.action;
+    if (!a) return;
+    $('#menu').classList.add('hidden');
+    if (a === 'export') {
+      const blob = new Blob([JSON.stringify({ app: 'warranty-tracker', version: 1, exportedAt: new Date().toISOString(), items }, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = Object.assign(document.createElement('a'), { href: url, download: `warranty-backup-${toISO(today())}.json` });
+      document.body.appendChild(link); link.click(); link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      toast('ส่งออกข้อมูลแล้ว');
+    }
+    if (a === 'import') $('#importFile').click();
+    if (a === 'sample') loadSample();
+    if (a === 'lg') {
+      if (!LiquidGlass.supported) return toast('เอฟเฟกต์หักเหแสงใช้ได้บน Chrome หรือ Edge');
+      if (LiquidGlass.reduced) return toast('ระบบตั้งค่าให้ลดความโปร่งใสไว้');
+      LiquidGlass.setEnabled(!LiquidGlass.enabled);
+      try { localStorage.setItem('wt-lg', LiquidGlass.enabled ? '1' : '0'); } catch (_) {}
+      toast(LiquidGlass.enabled ? 'เปิด Liquid Glass แล้ว' : 'ปิด Liquid Glass แล้ว');
+    }
+    if (a === 'clear') {
+      if (!items.length) return toast('ยังไม่มีข้อมูล');
+      confirmDialog('ลบข้อมูลทั้งหมด?', `สินค้าทั้งหมด ${items.length} รายการจะถูกลบถาวร แนะนำให้ส่งออกข้อมูลสำรองไว้ก่อน`, 'ลบทั้งหมด', () => {
+        markDeleted(items.map(i => i.id)); items = []; save(); render(); toast('ลบข้อมูลทั้งหมดแล้ว');
+      });
+    }
+  });
+  $('#importFile').addEventListener('change', async (e) => {
+    const f = e.target.files[0];
+    e.target.value = '';
+    if (!f) return;
+    try {
+      const json = JSON.parse(await f.text());
+      const arr = Array.isArray(json) ? json : json.items;
+      if (!Array.isArray(arr)) throw new Error();
+      const valid = normalizeItems(arr);
+      const ids = new Set(valid.map(x => x.id)), prev = items;
+      items = items.filter(x => !ids.has(x.id)).concat(valid);
+      if (!save()) { items = prev; return; }
+      render();
+      toast(`นำเข้า ${valid.length} รายการแล้ว`);
+    } catch { toast('ไฟล์ไม่ถูกต้อง'); }
+  });
+
+  function scheduleMidnight() {
+    const n = new Date(), m = new Date(n.getFullYear(), n.getMonth(), n.getDate() + 1, 0, 0, 5);
+    setTimeout(() => { render(); scheduleMidnight(); }, m - n);
+  }
+
+  // ---------- Init ----------
+  fillCategorySelects();
+  enhanceSelect($('#filterCategory'), 'toolbar');
+  enhanceSelect($('#sortBy'), 'toolbar');
+  enhanceSelect(F('category'), 'row');
+  LiquidGlass.init();
+  renderStorage();
+  scheduleMidnight();
+  loadData().then(() => { render(); return initFile(); }).finally(() => {
+    const soon = items.filter(i => statusOf(i) === 'expiring').length;
+    if (soon) setTimeout(() => toast(`มีสินค้า ${soon} รายการใกล้หมดประกันภายใน ${SOON_DAYS} วัน`, 4000), 400);
+  });
+})();
+</script>
+</body>
+</html>
